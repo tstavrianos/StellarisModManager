@@ -1,0 +1,114 @@
+﻿<Window x:Class="StellarisModManager.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        mc:Ignorable="d"
+        xmlns:dd="urn:gong-wpf-dragdrop"
+        xmlns:fa="http://schemas.fontawesome.io/icons/"
+        xmlns:local="clr-namespace:StellarisModManager"
+        DataContext="{Binding RelativeSource={RelativeSource Self}}"
+        Title="StellarisModManager" Height="450" Width="800" x:ClassModifier="internal">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="0">
+            <Button Name="MoveToTop" HorizontalContentAlignment="Left" Click="MoveToTop_Clicked" ClickMode="Release">
+                <StackPanel Orientation="Horizontal">
+                    <iconPacks:PackIconMaterial Kind="{x:Static iconPacks:PackIconMaterialKind.ChevronDoubleUp}"  VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    <Label>To Top</Label>
+                </StackPanel>
+            </Button>
+            <Button Name="MoveUp" HorizontalContentAlignment="Left" Click="MoveUp_Clicked" ClickMode="Release">
+                <StackPanel Orientation="Horizontal">
+                    <iconPacks:PackIconMaterial Kind="{x:Static iconPacks:PackIconMaterialKind.ChevronUp}"  VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    <Label>Up</Label>
+                </StackPanel>
+            </Button>
+            <Button Name="MoveDown" HorizontalContentAlignment="Left" Click="MoveDown_Clicked" ClickMode="Release">
+                <StackPanel Orientation="Horizontal">
+                    <iconPacks:PackIconMaterial Kind="{x:Static iconPacks:PackIconMaterialKind.ChevronDown}"  VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    <Label>Down</Label>
+                </StackPanel>
+            </Button>
+            <Button Name="MoveToBottom" HorizontalContentAlignment="Left" Click="MoveToBottom_Clicked" ClickMode="Release">
+                <StackPanel Orientation="Horizontal">
+                    <iconPacks:PackIconMaterial Kind="{x:Static iconPacks:PackIconMaterialKind.ChevronDoubleDown}"  VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    <Label>To Bottom</Label>
+                </StackPanel>
+            </Button>
+            <Button Name="Alpha" HorizontalContentAlignment="Left" Click="Alpha_Clicked" ClickMode="Release">
+                <StackPanel Orientation="Horizontal">
+                    <iconPacks:PackIconMaterial Kind="{x:Static iconPacks:PackIconMaterialKind.SortAlphabeticalAscending}"  VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    <Label>Alphabetical</Label>
+                </StackPanel>
+            </Button>
+            <Button Name="Reverse" HorizontalContentAlignment="Left" Click="Reverse_Clicked" ClickMode="Release">
+                <StackPanel Orientation="Horizontal">
+                    <iconPacks:PackIconMaterial Kind="{x:Static iconPacks:PackIconMaterialKind.UndoVariant}"  VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    <Label>Reverse</Label>
+                </StackPanel>
+            </Button>
+            <Button Name="CheckAll" HorizontalContentAlignment="Left" Click="CheckAll_Clicked" ClickMode="Release">
+                <StackPanel Orientation="Horizontal">
+                    <iconPacks:PackIconMaterial Kind="{x:Static iconPacks:PackIconMaterialKind.CheckboxMarked}"  VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    <Label>All</Label>
+                </StackPanel>
+            </Button>
+            <Button Name="UncheckAll" HorizontalContentAlignment="Left" Click="UncheckAll_Clicked" ClickMode="Release">
+                <StackPanel Orientation="Horizontal">
+                    <iconPacks:PackIconMaterial Kind="{x:Static iconPacks:PackIconMaterialKind.CheckboxBlank}"  VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    <Label>None</Label>
+                </StackPanel>
+            </Button>
+            <Button Name="InvertCheck" HorizontalContentAlignment="Left" Click="InvertCheck_Clicked" ClickMode="Release">
+                <StackPanel Orientation="Horizontal">
+                    <iconPacks:PackIconMaterial Kind="{x:Static iconPacks:PackIconMaterialKind.CheckBoxOutline}"  VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    <Label>Invert</Label>
+                </StackPanel>
+            </Button>
+            <Button Name="Export" HorizontalContentAlignment="Left" Click="Export_Clicked" ClickMode="Release">
+                <StackPanel Orientation="Horizontal">
+                    <iconPacks:PackIconMaterial Kind="{x:Static iconPacks:PackIconMaterialKind.FileExport}"  VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    <Label>Export</Label>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+        <ScrollViewer Grid.Column="1"  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+            <ListBox Name="ModList"
+                     BorderThickness="0"
+                     ItemsSource="{Binding Path=Test}"
+                     dd:DragDrop.IsDragSource="True"
+                     dd:DragDrop.IsDropTarget="True" 
+                     dd:DragDrop.UseDefaultDragAdorner="True"
+                     dd:DragDrop.UseVisualSourceItemSizeForDragAdorner="True"
+                     SelectionMode="Extended"
+                     SelectionChanged="ModList_OnSelectionChanged"
+            >
+                <ListBox.Resources>
+                    <HierarchicalDataTemplate DataType="{x:Type local:ItemPresenter}">
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox Focusable="False" IsChecked="{Binding IsChecked}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding Name}" Margin="5,0" />
+                        </StackPanel>
+                    </HierarchicalDataTemplate>
+                </ListBox.Resources>
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="IsSelected" Value="{Binding IsSelected}" />
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.Template>
+                    <ControlTemplate TargetType="ItemsControl">
+                        <Border>
+                            <ItemsPresenter />
+                        </Border>
+                    </ControlTemplate>
+                </ListBox.Template>
+            </ListBox>
+        </ScrollViewer>
+    </Grid>
+</Window>

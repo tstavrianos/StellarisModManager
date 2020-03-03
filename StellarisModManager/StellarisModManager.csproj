@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <UseWPF>true</UseWPF>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="CWTools" Version="0.3.0" />
+      <PackageReference Include="FSharp.Core" Version="4.5.0" />
+      <PackageReference Include="FSharpx.Collections" Version="2.1.2" />
+      <PackageReference Include="gong-wpf-dragdrop" Version="2.2.0" />
+      <PackageReference Include="ICSharpCode.SharpZipLib.Patched" Version="0.86.5.3" />
+      <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="3.3.0" />
+      <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+      <PackageReference Include="ReactiveUI.WPF" Version="11.2.1" />
+      <PackageReference Include="Serilog.Sinks.Console" Version="4.0.0-dev-00839" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="PDXModLib" />
+    </ItemGroup>
+
+</Project>
