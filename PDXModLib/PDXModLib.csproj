@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CWTools" Version="0.3.0" />
+    <PackageReference Include="FSharp.Core" Version="4.7.0" />
+    <PackageReference Include="FSharpx.Collections" Version="2.1.2" />
+    <PackageReference Include="ICSharpCode.SharpZipLib.Patched" Version="0.86.5.3" />
+    <PackageReference Include="Serilog" Version="2.9.1-dev-01154" />
+  </ItemGroup>
+
+</Project>

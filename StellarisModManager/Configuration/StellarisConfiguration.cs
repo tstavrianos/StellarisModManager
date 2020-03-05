@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using StellarisModManager.PDXModLib.Interfaces;
+using PDXModLib.Interfaces;
 
 namespace StellarisModManager.Configuration
 {

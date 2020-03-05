@@ -2,8 +2,6 @@
 
 namespace StellarisModManager
 {
-
-
     internal static class Extensions
     {
         internal static void MoveItemUp<T>(this ObservableCollection<T> baseCollection, int selectedIndex)

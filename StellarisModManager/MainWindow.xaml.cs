@@ -10,11 +10,11 @@ using Newtonsoft.Json;
 using Serilog;
 using StellarisModManager.Configuration;
 using StellarisModManager.Models;
-using StellarisModManager.PDXModLib.GameContext;
+using PDXModLib.GameContext;
 
 namespace StellarisModManager
 {
-    using StellarisModManager.PDXModLib.ModData;
+    using PDXModLib.ModData;
 
     internal sealed partial class MainWindow
     {

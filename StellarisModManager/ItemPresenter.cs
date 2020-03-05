@@ -1,5 +1,5 @@
 ﻿using System;
-using StellarisModManager.PDXModLib.ModData;
+using PDXModLib.ModData;
 
 namespace StellarisModManager
 {
