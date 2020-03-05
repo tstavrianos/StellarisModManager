@@ -1,0 +1,121 @@
+﻿@page "/"
+
+<h1>Stellaris Mod Manager</h1>
+<ul ondragover="event.preventDefault();" style="margin:20px">
+    @foreach (var item in Mods)
+    {
+        if (item != null)
+        {
+            <li draggable="true" style="list-style-type:none; height:30px" @key="item.ID" tabindex="1"
+                @ondrop="@(()=> Drop(item))" @ondrag="@(()=> StartDrag(item))">
+                @if (item.Checked)
+                {
+                    <span @onclick="@(() => ItemClick(item))"><i class="far fa-check-square"></i></span>
+                }
+                else
+                {
+                    <span @onclick="@(() => ItemClick(item))"><i class="far fa-square"></i></span>
+                }
+                <span>@item.Text</span> <small>@item.ID</small>
+            </li>
+        }
+        else
+        {
+            <li>NULL??</li>
+        }
+    }
+</ul>
+
+<button @onclick="Alpha">Alpha</button>
+<button @onclick="Reverse">Reverse</button>
+@code
+{
+
+    int currentIndex;
+
+    void StartDrag(Mod item)
+    {
+        currentIndex = GetIndex(item);
+        Console.WriteLine($"DragStart for {item.ID} index {currentIndex}");
+    }
+
+    void ItemClick(Mod item)
+    {
+        item.Checked = !item.Checked;
+    }
+
+
+    int GetIndex(Mod item)
+    {
+        return Mods.FindIndex(a => a.ID == item.ID);
+    }
+
+    void Drop(Mod item)
+    {
+        if (item != null)
+        {
+            Console.WriteLine($"Drop item {item.Text} ({item.ID})");
+            var index = GetIndex(item);
+            Console.WriteLine($"Drop index is {index}, move from {currentIndex}");
+            // get current item
+            var current = Mods[currentIndex];
+            // remove mod from current index
+            Mods.RemoveAt(currentIndex);
+            Mods.Insert(index, current);
+
+            // update current selection
+            currentIndex = index;
+
+            StateHasChanged();
+        }
+        else
+        {
+            Console.WriteLine("Drop - null");
+        }
+    }
+
+    void Alpha()
+    {
+        Mods.Sort((x, y) => x.Text.CompareTo(y.Text));
+        StateHasChanged();
+    }
+
+    void Reverse()
+    {
+        Mods.Reverse();
+        StateHasChanged();
+    }
+
+    void ReportList()
+    {
+        int i = 0;
+        foreach (var item in Mods)
+        {
+            Console.WriteLine($"{i++}: {item.ID} = {item.Text}");
+        }
+    }
+
+    public class Mod
+    {
+        public string ID { get; set; }
+        public string Text { get; set; }
+        public bool Checked { get; set; }
+        public override string ToString()
+        {
+            return Text;
+        }
+    }
+
+    List<Mod> Mods = new List<Mod> {
+    new Mod() { ID= "a1", Text= "Mod a"},
+    new Mod() { ID= "a2", Text= "Mod b"  },
+    new Mod() { ID= "a3", Text= "Mod c"  },
+    new Mod() { ID= "a4", Text= "Mod d"},
+    new Mod() { ID= "a5", Text= "Mod e" },
+    new Mod() { ID= "a6", Text= "Mod f"  },
+    new Mod() { ID= "a7", Text= "Mod g"  },
+    new Mod() { ID= "a8", Text= "Mod h" },
+    new Mod() { ID= "a9", Text= "Mod i"  },
+    new Mod() { ID= "a10", Text= "Mod j" },
+    };
+}
