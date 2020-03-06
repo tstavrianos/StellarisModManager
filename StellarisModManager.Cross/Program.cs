@@ -58,6 +58,7 @@
 
             var _webApp = new WebHostBuilder()
                 .UseSockets()
+                .UseStaticWebAssets()
                 .UseStartup<Startup>()
                 .UseKestrel(options =>
                     {
