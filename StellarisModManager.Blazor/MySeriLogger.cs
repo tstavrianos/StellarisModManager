@@ -1,9 +1,9 @@
-﻿namespace StellarisModManager.Cross
-{
-    using System;
-    using Chromely.Core.Logging;
-    using Serilog;
+﻿using System;
+using Chromely.Core.Logging;
+using Serilog;
 
+namespace StellarisModManager.Blazor
+{
     public class MySeriLogger : IChromelyLogger
     {
         #region Implementation of IChromelyLogger

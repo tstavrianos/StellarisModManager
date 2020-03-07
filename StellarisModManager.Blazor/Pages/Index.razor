@@ -1,0 +1,172 @@
+﻿@page "/"
+@using Serilog
+
+<h1>Stellaris Mod Manager</h1>
+<div class="row">
+    <div class="col-2">
+        <div class="row">
+            <div class="btn-group-vertical container-fluid" role="group" aria-label="First group">
+                <button type="button" class="btn btn-light text-left"><i class="fas fa-angle-double-up"></i>&nbsp;Top</button>
+                <button type="button" class="btn btn-light text-left"><i class="fas fa-angle-up"></i>&nbsp;Up</button>
+                <button type="button" class="btn btn-light text-left"><i class="fas fa-angle-down"></i>&nbsp;Down</button>
+                <button type="button" class="btn btn-light text-left"><i class="fas fa-angle-double-down"></i>&nbsp;Bottom</button>
+            </div>
+        </div>
+        <div class="row">&nbsp;</div>
+        <div class="row">
+            <div class="btn-group-vertical container-fluid" role="group" aria-label="Second group">
+              <button type="button" class="btn btn-light text-left" @onclick="@(Alpha)"><i class="fas fa-sort-alpha-down"></i>&nbsp;Alphabetical</button>
+              <button type="button" class="btn btn-light text-left" @onclick="@(Reverse)"><i class="fas fa-undo-alt"></i>&nbsp;Reverse</button>
+            </div>
+        </div>
+        <div class="row">&nbsp;</div>
+        <div class="row">
+            <div class="btn-group-vertical container-fluid" role="group" aria-label="Third group">
+                <button type="button" class="btn btn-light text-left"><i class="far fa-check-square"></i>&nbsp;All</button>
+                <button type="button" class="btn btn-light text-left"><i class="far fa-square"></i>&nbsp;None</button>
+                <button type="button" class="btn btn-light text-left"><i class="fas fa-check-square"></i>&nbsp;Invert</button>
+            </div>
+        </div>
+        <div class="row">&nbsp;</div>
+        <div class="row">
+            <div class="btn-group-vertical container-fluid" role="group" aria-label="fourth group">
+              <button type="button" class="btn btn-light text-left"><i class="fas fa-save"></i>&nbsp;Save</button>
+            </div>
+        </div>
+    </div>
+    <div class="col-9">
+        <ul ondragover="event.preventDefault();" class="list-group">
+            @foreach (var item in _mods)
+            {
+                if (item != null)
+                {
+                    <li draggable="true" @key="@item.Id" tabindex="1" class="list-group-item @item.Selected" @onmousedown="@((e) => ItemSelected(e, item))"
+                        @ondrop="@(()=> Drop(item))" @ondrag="@(()=> StartDrag(item))">
+                        @if (item.Checked)
+                        {
+                            <span @onclick="@(() => ItemClick(item))"><i class="far fa-check-square"></i></span>
+                        }
+                        else
+                        {
+                            <span @onclick="@(() => ItemClick(item))"><i class="far fa-square"></i></span>
+                        }
+                        <span>@item.Text</span> <small>@item.Id</small>
+                    </li>
+                }
+                else
+                {
+                    <li class="list-group-item">NULL??</li>
+                }
+            }
+        </ul>
+    </div>
+</div>
+
+@code
+{
+
+    int _currentIndex;
+
+    void StartDrag(Mod item)
+    {
+        _currentIndex = GetIndex(item);
+        Log.Debug($"DragStart for {item.Id} index {_currentIndex}");
+    }
+
+    static void ItemClick(Mod item)
+    {
+        item.Checked = !item.Checked;
+    }
+
+    void ItemSelected(MouseEventArgs e, Mod item)
+    {
+        if (e.Button != 0) return;
+        if (e.CtrlKey)
+        {
+            item.Selected = string.IsNullOrWhiteSpace(item.Selected) ? "active" : string.Empty;
+        }
+        else
+        {
+            foreach (var i in _mods)
+            {
+                i.Selected = i.Id == item.Id ? "active" : string.Empty;
+            }
+        }
+    }
+
+
+    int GetIndex(Mod item)
+    {
+        return _mods.FindIndex(a => a.Id == item.Id);
+    }
+
+    void Drop(Mod item)
+    {
+        if (item != null)
+        {
+            Log.Debug($"Drop item {item.Text} ({item.Id})");
+            var index = GetIndex(item);
+            Log.Debug($"Drop index is {index}, move from {_currentIndex}");
+            // get current item
+            var current = _mods[_currentIndex];
+            // remove mod from current index
+            _mods.RemoveAt(_currentIndex);
+            _mods.Insert(index, current);
+
+            // update current selection
+            _currentIndex = index;
+
+            StateHasChanged();
+        }
+        else
+        {
+            Log.Debug("Drop - null");
+        }
+    }
+
+    void Alpha()
+    {
+        _mods.Sort((x, y) => String.Compare(x.Text, y.Text, StringComparison.Ordinal));
+        StateHasChanged();
+    }
+
+    void Reverse()
+    {
+        _mods.Reverse();
+        StateHasChanged();
+    }
+
+    void ReportList()
+    {
+        var i = 0;
+        foreach (var item in _mods)
+        {
+            Console.WriteLine($"{i++}: {item.Id} = {item.Text}");
+        }
+    }
+
+    private class Mod
+    {
+        public string Id { get; set; }
+        public string Text { get; set; }
+        public bool Checked { get; set; }
+        public string Selected { get; set; }
+        public override string ToString()
+        {
+            return Text;
+        }
+    }
+
+    readonly List<Mod> _mods = new List<Mod> {
+    new Mod() { Id= "a1", Text= "Mod a"},
+    new Mod() { Id= "a2", Text= "Mod b"  },
+    new Mod() { Id= "a3", Text= "Mod c"  },
+    new Mod() { Id= "a4", Text= "Mod d"},
+    new Mod() { Id= "a5", Text= "Mod e" },
+    new Mod() { Id= "a6", Text= "Mod f"  },
+    new Mod() { Id= "a7", Text= "Mod g"  },
+    new Mod() { Id= "a8", Text= "Mod h" },
+    new Mod() { Id= "a9", Text= "Mod i"  },
+    new Mod() { Id= "a10", Text= "Mod j" },
+    };
+}

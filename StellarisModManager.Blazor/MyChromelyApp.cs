@@ -1,8 +1,8 @@
-﻿namespace StellarisModManager.Cross
-{
-    using Chromely;
-    using Chromely.Core;
+﻿using Chromely;
+using Chromely.Core;
 
+namespace StellarisModManager.Blazor
+{
     class MyChromelyApp : ChromelyBasicApp
     {
         public override void Configure(IChromelyContainer container)
