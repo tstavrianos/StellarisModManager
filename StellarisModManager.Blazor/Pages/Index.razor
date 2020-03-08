@@ -6,7 +6,7 @@
 <div class="row">
     <div class="col-2">
         <div class="row">
-            <div class="btn-group-vertical container-fluid" role="group" aria-label="First group">
+            <div class="btn-group-vertical container-fluid text-nowrap" role="group" aria-label="First group">
                 <button type="button" class="btn btn-light text-left" @onclick="@(MoveToTop)"><i class="fas fa-angle-double-up"></i>&nbsp;Top</button>
                 <button type="button" class="btn btn-light text-left" @onclick="@(MoveUp)"><i class="fas fa-angle-up"></i>&nbsp;Up</button>
                 <button type="button" class="btn btn-light text-left" @onclick="@(MoveDown)"><i class="fas fa-angle-down"></i>&nbsp;Down</button>
@@ -15,14 +15,16 @@
         </div>
         <div class="row">&nbsp;</div>
         <div class="row">
-            <div class="btn-group-vertical container-fluid" role="group" aria-label="Second group">
+            <div class="btn-group-vertical container-fluid text-nowrap" role="group" aria-label="Second group">
               <button type="button" class="btn btn-light text-left" @onclick="@(Alpha)"><i class="fas fa-sort-alpha-down"></i>&nbsp;Alphabetical</button>
-              <button type="button" class="btn btn-light text-left" @onclick="@(Reverse)"><i class="fas fa-undo-alt"></i>&nbsp;Reverse</button>
+                <button type="button" class="btn btn-light text-left" @onclick="@(Reverse)"><i class="fas fa-undo-alt"></i>&nbsp;Reverse</button>
+                <button type="button" class="btn btn-light text-left" @onclick="@(TopologicalSort)"><i class="fas fa-sort-amount-down-alt"></i>&nbsp;Topological Sort</button>
+                <button type="button" class="btn btn-light text-left disabled"><i class="fas fa-hammer"></i>&nbsp;Load Order Fixer</button>
             </div>
         </div>
         <div class="row">&nbsp;</div>
         <div class="row">
-            <div class="btn-group-vertical container-fluid" role="group" aria-label="Third group">
+            <div class="btn-group-vertical container-fluid text-nowrap" role="group" aria-label="Third group">
                 <button type="button" class="btn btn-light text-left" @onclick="@(CheckAll)"><i class="far fa-check-square"></i>&nbsp;All</button>
                 <button type="button" class="btn btn-light text-left" @onclick="@(UncheckAll)"><i class="far fa-square"></i>&nbsp;None</button>
                 <button type="button" class="btn btn-light text-left" @onclick="@(InvertChecked)"><i class="fas fa-check-square"></i>&nbsp;Invert</button>
@@ -30,7 +32,7 @@
         </div>
         <div class="row">&nbsp;</div>
         <div class="row">
-            <div class="btn-group-vertical container-fluid" role="group" aria-label="fourth group">
+            <div class="btn-group-vertical container-fluid text-nowrap" role="group" aria-label="fourth group">
               <button type="button" class="btn btn-light text-left" @onclick="@(Save)"><i class="fas fa-save"></i>&nbsp;Save</button>
             </div>
         </div>
@@ -52,6 +54,13 @@
                             <span @onclick="@(() => ItemClick(item))"><i class="far fa-square"></i></span>
                         }
                         <span>@item.Name
+                            @if (item.ModData.Tags != null)
+                            {
+                                @foreach (var tag in item.ModData.Tags)
+                                {
+                                    <span class="badge badge-info">@tag</span>
+                                }
+                            }
                         @if (item.Issues.Count > 0)
                         {
                             <span class="badge badge-warning" data-toggle="tooltip" title="@item.IssuesHtml">@item.Issues.Count</span>
@@ -70,9 +79,14 @@
 
 @code
 {
-
     int _currentIndex;
 
+    void TopologicalSort()
+    {
+        _manager.TopologicalSort();
+        StateHasChanged();
+    }
+    
     void StartDrag(ModEntry item)
     {
         _currentIndex = GetIndex(item);
@@ -107,7 +121,6 @@
     int GetIndex(ModEntry item)
     {
         return _manager.Mods.IndexOf(item);
-        //return _manager.Mods.FindIndex(a => a.Id == item.Guid);
     }
 
     void Drop(ModEntry item)
@@ -117,13 +130,9 @@
             Log.Debug($"Drop item {item.Name} ({item.Guid})");
             var index = GetIndex(item);
             Log.Debug($"Drop index is {index}, move from {_currentIndex}");
-            // get current item
             var current = _manager.Mods[_currentIndex];
-            // remove mod from current index
             _manager.Mods.RemoveAt(_currentIndex);
             _manager.Mods.Insert(index, current);
-
-            // update current selection
             _currentIndex = index;
         }
         else

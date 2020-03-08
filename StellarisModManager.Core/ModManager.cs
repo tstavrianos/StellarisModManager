@@ -299,7 +299,26 @@ namespace StellarisModManager.Core
                     }
                 }
             }
+        }
 
+        public void TopologicalSort()
+        {
+            var sorter = new TopologicalSorter<ModEntry>();
+            foreach (var entry in this.Mods)
+            {
+                var dependencies = entry.ModData.Dependencies?.Select(d => this.Mods.FirstOrDefault(x => x.Name == d)).Where(found => found != null).ToList();
+                if (dependencies?.Count > 0)
+                {
+                    sorter.Add(entry, dependencies);
+                    continue;
+                }
+                sorter.Add(entry);
+            }
+
+            var order = sorter.Sort().Item1;
+            this.Mods.Clear();
+            foreach(var entry in order) this.Mods.Add(entry);
+            this.Validate();
         }
     }
 }
