@@ -10,4 +10,8 @@
     <PackageReference Include="Serilog.Sinks.File" Version="5.0.0-dev-00864" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Pdoxcl2Sharp\Pdoxcl2Sharp.csproj" />
+  </ItemGroup>
+
 </Project>

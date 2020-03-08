@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
+using Pdoxcl2Sharp;
 using Stellaris.Data;
 using Stellaris.Data.Json;
 using Stellaris.Data.Parser;
@@ -23,7 +24,16 @@ namespace StellarisModManager.Core
                 $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\\Paradox Interactive\\Stellaris";
             this.ModPath = Path.Combine(this.BasePath, "mod");
             if(parser == null) parser = new SimpleModParser();
-            var mods = (from file in Directory.EnumerateFiles(this.ModPath, "*.mod") let table = parser.Parse(file) select new Mod(table, file)).ToList();
+            var mods = new List<Mod>();
+            foreach (var file in Directory.EnumerateFiles(ModPath, "*.mod"))
+            {
+                using (var fs = new FileStream(file, FileMode.Open))
+                {
+                    var mod = ParadoxParser.Parse(fs, new Mod(file));
+                    mod.Validate();
+                    mods.Add(mod);
+                }
+            }
 
             var gameData = LoadJson(Path.Combine(this.BasePath, "game_data.json"), x => {}, () => new GameData { ModsOrder = new List<string>() });
             var dlcLoad = LoadJson(Path.Combine(this.BasePath, "dlc_load.json"), x => {}, () => new DlcLoad {DisabledDlcs = new List<string>(), EnabledMods = new List<string>()});

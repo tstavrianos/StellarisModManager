@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Stellaris.Data.Parser;
 
-namespace Stellaris.Data
+namespace Stellaris.Data.Parser
 {
     public sealed class SimpleModParser: IParser
     {
