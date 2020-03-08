@@ -8,15 +8,13 @@
 
     <ItemGroup>
       <PackageReference Include="gong-wpf-dragdrop" Version="2.2.0" />
-      <PackageReference Include="ICSharpCode.SharpZipLib.Patched" Version="0.86.5.3" />
       <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="3.3.0" />
       <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
       <PackageReference Include="Serilog.Sinks.Console" Version="4.0.0-dev-00839" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\PDXModLib\PDXModLib.csproj" />
-      <ProjectReference Include="..\StellarisModManager.Models\StellarisModManager.Models.csproj" />
+      <ProjectReference Include="..\StellarisModManager.Core\StellarisModManager.Core.csproj" />
     </ItemGroup>
 
 </Project>

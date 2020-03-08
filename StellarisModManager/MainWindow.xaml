@@ -8,6 +8,7 @@
         xmlns:dd="urn:gong-wpf-dragdrop"
         xmlns:fa="http://schemas.fontawesome.io/icons/"
         xmlns:local="clr-namespace:StellarisModManager"
+        xmlns:core="clr-namespace:StellarisModManager.Core;assembly=StellarisModManager.Core"
         DataContext="{Binding RelativeSource={RelativeSource Self}}"
         Title="StellarisModManager" Height="450" Width="800" x:ClassModifier="internal">
     <Grid>
@@ -80,7 +81,7 @@
         <ScrollViewer Grid.Column="1"  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
             <ListBox Name="ModList"
                      BorderThickness="0"
-                     ItemsSource="{Binding Path=Test}"
+                     ItemsSource="{Binding Path=Manager.Mods}"
                      dd:DragDrop.IsDragSource="True"
                      dd:DragDrop.IsDropTarget="True" 
                      dd:DragDrop.UseDefaultDragAdorner="True"
@@ -89,9 +90,9 @@
                      SelectionChanged="ModList_OnSelectionChanged"
             >
                 <ListBox.Resources>
-                    <HierarchicalDataTemplate DataType="{x:Type local:ItemPresenter}">
+                    <HierarchicalDataTemplate DataType="{x:Type core:ModEntry}">
                         <StackPanel Orientation="Horizontal">
-                            <CheckBox Focusable="False" IsChecked="{Binding IsChecked}" VerticalAlignment="Center" />
+                            <CheckBox Focusable="False" IsChecked="{Binding IsEnabled}" VerticalAlignment="Center" />
                             <TextBlock Text="{Binding Name}" Margin="5,0" />
                         </StackPanel>
                     </HierarchicalDataTemplate>

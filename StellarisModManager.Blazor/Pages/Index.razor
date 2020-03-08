@@ -1,15 +1,16 @@
 ﻿@page "/"
 @using Serilog
+@using StellarisModManager.Core
 
 <h1>Stellaris Mod Manager</h1>
 <div class="row">
     <div class="col-2">
         <div class="row">
             <div class="btn-group-vertical container-fluid" role="group" aria-label="First group">
-                <button type="button" class="btn btn-light text-left"><i class="fas fa-angle-double-up"></i>&nbsp;Top</button>
-                <button type="button" class="btn btn-light text-left"><i class="fas fa-angle-up"></i>&nbsp;Up</button>
-                <button type="button" class="btn btn-light text-left"><i class="fas fa-angle-down"></i>&nbsp;Down</button>
-                <button type="button" class="btn btn-light text-left"><i class="fas fa-angle-double-down"></i>&nbsp;Bottom</button>
+                <button type="button" class="btn btn-light text-left" @onclick="@(MoveToTop)"><i class="fas fa-angle-double-up"></i>&nbsp;Top</button>
+                <button type="button" class="btn btn-light text-left" @onclick="@(MoveUp)"><i class="fas fa-angle-up"></i>&nbsp;Up</button>
+                <button type="button" class="btn btn-light text-left" @onclick="@(MoveDown)"><i class="fas fa-angle-down"></i>&nbsp;Down</button>
+                <button type="button" class="btn btn-light text-left" @onclick="@(MoveToBottom)"><i class="fas fa-angle-double-down"></i>&nbsp;Bottom</button>
             </div>
         </div>
         <div class="row">&nbsp;</div>
@@ -22,27 +23,27 @@
         <div class="row">&nbsp;</div>
         <div class="row">
             <div class="btn-group-vertical container-fluid" role="group" aria-label="Third group">
-                <button type="button" class="btn btn-light text-left"><i class="far fa-check-square"></i>&nbsp;All</button>
-                <button type="button" class="btn btn-light text-left"><i class="far fa-square"></i>&nbsp;None</button>
-                <button type="button" class="btn btn-light text-left"><i class="fas fa-check-square"></i>&nbsp;Invert</button>
+                <button type="button" class="btn btn-light text-left" @onclick="@(CheckAll)"><i class="far fa-check-square"></i>&nbsp;All</button>
+                <button type="button" class="btn btn-light text-left" @onclick="@(UncheckAll)"><i class="far fa-square"></i>&nbsp;None</button>
+                <button type="button" class="btn btn-light text-left" @onclick="@(InvertChecked)"><i class="fas fa-check-square"></i>&nbsp;Invert</button>
             </div>
         </div>
         <div class="row">&nbsp;</div>
         <div class="row">
             <div class="btn-group-vertical container-fluid" role="group" aria-label="fourth group">
-              <button type="button" class="btn btn-light text-left"><i class="fas fa-save"></i>&nbsp;Save</button>
+              <button type="button" class="btn btn-light text-left" @onclick="@(Save)"><i class="fas fa-save"></i>&nbsp;Save</button>
             </div>
         </div>
     </div>
     <div class="col-9">
         <ul ondragover="event.preventDefault();" class="list-group">
-            @foreach (var item in _mods)
+            @foreach (var item in _manager.Mods)
             {
                 if (item != null)
                 {
-                    <li draggable="true" @key="@item.Id" tabindex="1" class="list-group-item @item.Selected" @onmousedown="@((e) => ItemSelected(e, item))"
+                    <li draggable="true" @key="@item.Guid" tabindex="1" class="list-group-item @(item.IsSelected?"active":"") @(item.ModData.Valid?"":"list-group-item-danger")" @onmousedown="@((e) => ItemSelected(e, item))"
                         @ondrop="@(()=> Drop(item))" @ondrag="@(()=> StartDrag(item))">
-                        @if (item.Checked)
+                        @if (item.IsEnabled)
                         {
                             <span @onclick="@(() => ItemClick(item))"><i class="far fa-check-square"></i></span>
                         }
@@ -50,7 +51,12 @@
                         {
                             <span @onclick="@(() => ItemClick(item))"><i class="far fa-square"></i></span>
                         }
-                        <span>@item.Text</span> <small>@item.Id</small>
+                        <span>@item.Name
+                        @if (item.Issues.Count > 0)
+                        {
+                            <span class="badge badge-warning" data-toggle="tooltip" title="@item.IssuesHtml">@item.Issues.Count</span>
+                        }
+                        </span>
                     </li>
                 }
                 else
@@ -67,106 +73,126 @@
 
     int _currentIndex;
 
-    void StartDrag(Mod item)
+    void StartDrag(ModEntry item)
     {
         _currentIndex = GetIndex(item);
-        Log.Debug($"DragStart for {item.Id} index {_currentIndex}");
+        Log.Debug($"DragStart for {item.Guid} index {_currentIndex}");
     }
 
-    static void ItemClick(Mod item)
+    void ItemClick(ModEntry item)
     {
-        item.Checked = !item.Checked;
+        item.IsEnabled = !item.IsEnabled;
+        _manager.Validate();
+        StateHasChanged();
     }
 
-    void ItemSelected(MouseEventArgs e, Mod item)
+    void ItemSelected(MouseEventArgs e, ModEntry item)
     {
         if (e.Button != 0) return;
         if (e.CtrlKey)
         {
-            item.Selected = string.IsNullOrWhiteSpace(item.Selected) ? "active" : string.Empty;
+            item.IsSelected = !item.IsSelected;
         }
         else
         {
-            foreach (var i in _mods)
+            foreach (var i in _manager.Mods)
             {
-                i.Selected = i.Id == item.Id ? "active" : string.Empty;
+                i.IsSelected = i.Guid == item.Guid ? true : false;
             }
         }
+        StateHasChanged();
     }
 
 
-    int GetIndex(Mod item)
+    int GetIndex(ModEntry item)
     {
-        return _mods.FindIndex(a => a.Id == item.Id);
+        return _manager.Mods.IndexOf(item);
+        //return _manager.Mods.FindIndex(a => a.Id == item.Guid);
     }
 
-    void Drop(Mod item)
+    void Drop(ModEntry item)
     {
         if (item != null)
         {
-            Log.Debug($"Drop item {item.Text} ({item.Id})");
+            Log.Debug($"Drop item {item.Name} ({item.Guid})");
             var index = GetIndex(item);
             Log.Debug($"Drop index is {index}, move from {_currentIndex}");
             // get current item
-            var current = _mods[_currentIndex];
+            var current = _manager.Mods[_currentIndex];
             // remove mod from current index
-            _mods.RemoveAt(_currentIndex);
-            _mods.Insert(index, current);
+            _manager.Mods.RemoveAt(_currentIndex);
+            _manager.Mods.Insert(index, current);
 
             // update current selection
             _currentIndex = index;
-
-            StateHasChanged();
         }
         else
         {
             Log.Debug("Drop - null");
         }
+        _manager.Validate();
+        StateHasChanged();
     }
 
     void Alpha()
     {
-        _mods.Sort((x, y) => String.Compare(x.Text, y.Text, StringComparison.Ordinal));
+        _manager.AlphaSort();
         StateHasChanged();
     }
 
     void Reverse()
     {
-        _mods.Reverse();
+        _manager.ReverseOrder();
         StateHasChanged();
     }
 
-    void ReportList()
+    void MoveToTop()
     {
-        var i = 0;
-        foreach (var item in _mods)
-        {
-            Console.WriteLine($"{i++}: {item.Id} = {item.Text}");
-        }
+        _manager.MoveToTop();
+        StateHasChanged();
     }
 
-    private class Mod
+    void MoveUp()
     {
-        public string Id { get; set; }
-        public string Text { get; set; }
-        public bool Checked { get; set; }
-        public string Selected { get; set; }
-        public override string ToString()
-        {
-            return Text;
-        }
+        _manager.MoveUp();
+        StateHasChanged();
     }
 
-    readonly List<Mod> _mods = new List<Mod> {
-    new Mod() { Id= "a1", Text= "Mod a"},
-    new Mod() { Id= "a2", Text= "Mod b"  },
-    new Mod() { Id= "a3", Text= "Mod c"  },
-    new Mod() { Id= "a4", Text= "Mod d"},
-    new Mod() { Id= "a5", Text= "Mod e" },
-    new Mod() { Id= "a6", Text= "Mod f"  },
-    new Mod() { Id= "a7", Text= "Mod g"  },
-    new Mod() { Id= "a8", Text= "Mod h" },
-    new Mod() { Id= "a9", Text= "Mod i"  },
-    new Mod() { Id= "a10", Text= "Mod j" },
-    };
+    void MoveDown()
+    {
+        _manager.MoveDown();
+        StateHasChanged();
+    }
+
+    void MoveToBottom()
+    {
+        _manager.MoveToBottom();
+        StateHasChanged();
+    }
+
+    void CheckAll()
+    {
+        _manager.CheckAll();
+        StateHasChanged();
+    }
+
+    void UncheckAll()
+    {
+        _manager.UncheckAll();
+        StateHasChanged();
+    }
+
+    void InvertChecked()
+    {
+        _manager.InvertCheck();
+        StateHasChanged();
+    }
+
+    void Save()
+    {
+        _manager.Save();
+        StateHasChanged();
+    }
+
+    readonly ModManager _manager = new ModManager();
 }

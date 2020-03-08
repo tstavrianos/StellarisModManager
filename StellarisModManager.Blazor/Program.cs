@@ -61,7 +61,7 @@ namespace StellarisModManager.Blazor
         /// <summary> Bootstrap the Chromely browser. </summary>
         private static void ChromelyBootstrap(string[] args, string[] appurls) {
             var config = DefaultConfiguration.CreateForRuntimePlatform();
-            config.WindowOptions.Title = "Title Window";
+            config.WindowOptions.Title = "Stellaris Mod Manager";
             config.StartUrl = appurls.First();
 #if DEBUG
             config.DebuggingMode = true;

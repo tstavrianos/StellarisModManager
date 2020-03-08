@@ -42,5 +42,9 @@
         <Content Update="wwwroot\**">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
+    </ItemGroup> 
+
+    <ItemGroup>
+      <ProjectReference Include="..\StellarisModManager.Core\StellarisModManager.Core.csproj" />
     </ItemGroup>
 </Project>
