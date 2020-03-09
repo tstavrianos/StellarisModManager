@@ -4,7 +4,6 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
-using Pdoxcl2Sharp;
 using Stellaris.Data;
 using Stellaris.Data.Json;
 using Stellaris.Data.Parser;
@@ -16,23 +15,23 @@ namespace StellarisModManager.Core
         public ObservableCollection<ModEntry> Mods { get; }
         public string BasePath { get; }
         public string ModPath { get; }
+        private readonly List<ModConflict> _conflicts;
+        public IReadOnlyList<ModConflict> Conflicts => this._conflicts;
 
         public ModManager(IParser parser = null)
         {
+            this._conflicts = new List<ModConflict>();
             this.Mods = new ObservableCollection<ModEntry>();
-            this.BasePath =
-                $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\\Paradox Interactive\\Stellaris";
+            this.BasePath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\\Paradox Interactive\\Stellaris";
             this.ModPath = Path.Combine(this.BasePath, "mod");
             if(parser == null) parser = new SimpleModParser();
             var mods = new List<Mod>();
             foreach (var file in Directory.EnumerateFiles(ModPath, "*.mod"))
             {
-                using (var fs = new FileStream(file, FileMode.Open))
-                {
-                    var mod = ParadoxParser.Parse(fs, new Mod(file));
-                    mod.Validate();
-                    mods.Add(mod);
-                }
+                var parsed = parser.Parse(file);
+                var mod = new Mod(parsed);
+                mod.Validate(file);
+                mods.Add(mod);
             }
 
             var gameData = LoadJson(Path.Combine(this.BasePath, "game_data.json"), x => {}, () => new GameData { ModsOrder = new List<string>() });
@@ -41,7 +40,7 @@ namespace StellarisModManager.Core
             foreach (var t in gameData.ModsOrder)
             {
                 if (!modsRegistry.TryGetValue(t, out var found)) continue;
-                var alsoFound = mods.FirstOrDefault(x => x.Key.Equals(found.GameRegistryId, StringComparison.OrdinalIgnoreCase));
+                var alsoFound = mods.FirstOrDefault(x => x.Matches(found));
                 if (alsoFound == null) continue;
                 
                 var it = new ModEntry(alsoFound, found.Id, found);
@@ -49,13 +48,19 @@ namespace StellarisModManager.Core
                 this.Mods.Add(it);
             }
 
-            foreach (var it in from x1 in mods where this.Mods.All(y => y.ModData.Key != x1.Key) let found = modsRegistry.Where(x => x.Value.GameRegistryId.Equals(x1.Key, StringComparison.OrdinalIgnoreCase)).Select(x => x.Value).FirstOrDefault() select new ModEntry(x1, found?.Id, found))
+            foreach (var x1 in mods)
             {
-                it.IsEnabled = dlcLoad.EnabledMods.Any(x => x.Equals(it.ModData.Key, StringComparison.OrdinalIgnoreCase));
-                this.Mods.Add(it);
+                if (this.Mods.All(y => y.ModData.Key != x1.Key))
+                {
+                    var found = modsRegistry.Where(x => x1.Matches(x.Value)).Select(x => x.Value).FirstOrDefault();
+                    var it = new ModEntry(x1, found?.Id, found);
+                    it.IsEnabled = dlcLoad.EnabledMods.Any(x => x.Equals(it.ModData.Key, StringComparison.OrdinalIgnoreCase));
+                    this.Mods.Add(it);
+                }
             }
-            
+
             this.Validate();
+            this.CalculateConficts();
         }
         
         private static T LoadJson<T>(string file, Action<T> found, Func<T> notFound)
@@ -97,11 +102,11 @@ namespace StellarisModManager.Core
         public void Save()
         {
             var gameDataFile = Path.Combine(this.BasePath, "game_data.json");
-            var gameData = LoadJson<GameData>(gameDataFile, x => x.ModsOrder.Clear(), () => new GameData { ModsOrder = new List<string>() });
+            var gameData = LoadJson(gameDataFile, x => x.ModsOrder.Clear(), () => new GameData { ModsOrder = new List<string>() });
             var dlcLoadFile = Path.Combine(this.BasePath, "dlc_load.json");
-            var dlcLoad = LoadJson<DlcLoad>(dlcLoadFile, x => x.EnabledMods.Clear(), () => new DlcLoad {DisabledDlcs = new List<string>(), EnabledMods = new List<string>()});
+            var dlcLoad = LoadJson(dlcLoadFile, x => x.EnabledMods.Clear(), () => new DlcLoad {DisabledDlcs = new List<string>(), EnabledMods = new List<string>()});
             var modsRegistryFile = Path.Combine(this.BasePath, "mods_registry.json");
-            var modsRegistry = LoadJson<ModsRegistry>(modsRegistryFile, x => x.Clear(), () => new ModsRegistry());
+            var modsRegistry = LoadJson(modsRegistryFile, x => x.Clear(), () => new ModsRegistry());
 
             foreach(var item in this.Mods)
                 gameData.ModsOrder.Add(item.Guid.ToString());
@@ -115,22 +120,23 @@ namespace StellarisModManager.Core
                 if (item.RegistryData != null) entry = item.RegistryData;
                 else
                 {
-                    entry = new ModsRegistryEntry();
-                    entry.Id = item.Guid.ToString();
-                    entry.Source = !string.IsNullOrWhiteSpace(item.ModData.Path)
-                                   && (item.ModData.Path.StartsWith(
-                                           this.BasePath,
-                                           StringComparison.OrdinalIgnoreCase)
-                                       || item.ModData.Path.StartsWith("mod/", StringComparison.OrdinalIgnoreCase))
-                                       ? SourceType.local
-                                       : SourceType.steam;
-                    entry.Status = item.ModData.Valid ? StatusType.ready_to_play : StatusType.invalid_mod;
-                    entry.SteamId = $"{item.ModData.RemoteFileId}";
-                    entry.DisplayName = item.ModData.Name;
-                    entry.GameRegistryId = item.ModData.Key;
-                    entry.RequiredVersion =
-                        item.ModData.SupportedVersion != null ? item.ModData.SupportedVersion.ToString() : "1.*";
-                    entry.Tags = new List<string>(item.ModData.Tags);
+                    entry = new ModsRegistryEntry
+                    {
+                        Id = item.Guid.ToString(),
+                        Source = !string.IsNullOrWhiteSpace(item.ModData.Path)
+                                 && (item.ModData.Path.StartsWith(
+                                         this.BasePath,
+                                         StringComparison.OrdinalIgnoreCase)
+                                     || item.ModData.Path.StartsWith("mod/", StringComparison.OrdinalIgnoreCase))
+                            ? SourceType.local
+                            : SourceType.steam,
+                        Status = item.ModData.Valid ? StatusType.ready_to_play : StatusType.invalid_mod,
+                        SteamId = $"{item.ModData.RemoteFileId}",
+                        DisplayName = item.ModData.Name,
+                        GameRegistryId = item.ModData.Key,
+                        RequiredVersion = item.ModData.SupportedVersion ?? "1.*",
+                        Tags = new List<string>(item.ModData.Tags)
+                    };
                     if (!string.IsNullOrWhiteSpace(item.ModData.Archive))
                     {
                         entry.ArchivePath = item.ModData.Archive;
@@ -159,6 +165,7 @@ namespace StellarisModManager.Core
                 this.Mods.Add(item);
             }
             this.Validate();
+            this.CalculateConficts();
         }
         
         public void ReverseOrder()
@@ -166,6 +173,7 @@ namespace StellarisModManager.Core
             for (var i = 0; i < this.Mods.Count; i++)
                 this.Mods.Move(this.Mods.Count - 1, i);
             this.Validate();
+            this.CalculateConficts();
         }
 
         public void MoveToTop()
@@ -178,6 +186,7 @@ namespace StellarisModManager.Core
                 last++;
             }
             this.Validate();
+            this.CalculateConficts();
         }
 
         public void MoveUp()
@@ -190,6 +199,7 @@ namespace StellarisModManager.Core
                 }
             }
             this.Validate();
+            this.CalculateConficts();
         }
 
         public void MoveDown()
@@ -202,6 +212,7 @@ namespace StellarisModManager.Core
                 }
             }
             this.Validate();
+            this.CalculateConficts();
         }
 
         public void MoveToBottom()
@@ -214,6 +225,7 @@ namespace StellarisModManager.Core
                 first--;
             }
             this.Validate();
+            this.CalculateConficts();
         }
 
         public void CheckAll()
@@ -225,6 +237,7 @@ namespace StellarisModManager.Core
                 modEntry.IsEnabled = all || modEntry.IsSelected;
             }
             this.Validate();
+            this.CalculateConficts();
         }
 
         public void UncheckAll()
@@ -243,6 +256,7 @@ namespace StellarisModManager.Core
                 }
             }
             this.Validate();
+            this.CalculateConficts();
         }
 
         public void InvertCheck()
@@ -261,6 +275,7 @@ namespace StellarisModManager.Core
                 }
             }        
             this.Validate();
+            this.CalculateConficts();
         }
 
         public void Validate()
@@ -270,32 +285,28 @@ namespace StellarisModManager.Core
                 var it = this.Mods[i];
                 it.Issues.Clear();
 
-                if (it.IsEnabled)
+                if (!it.IsEnabled) continue;
+                if (it.ModData.Dependencies == null) continue;
+                foreach (var dep in it.ModData.Dependencies)
                 {
-                    if (it.ModData.Dependencies != null)
+                    var depMod = this.Mods.FirstOrDefault(x => x.Name == dep);
+                    if (depMod == null)
                     {
-                        foreach (var dep in it.ModData.Dependencies)
-                        {
-                            var depMod = this.Mods.FirstOrDefault(x => x.Name == dep);
-                            if (depMod == null)
-                            {
-                                it.Issues.Add($"{dep} is not installed");
-                                continue;
-                            }
-                            var depModIdx = this.Mods.IndexOf(depMod);
-                            if (!depMod.IsEnabled)
-                            {
-                                it.Issues.Add($"{dep} should be enabled");
-                            }
-                            if (depModIdx > i)
-                            {
-                                it.Issues.Add($"{dep} should be higher than {it.Name}");
-                            } 
-                            else if (depModIdx == i)
-                            {
-                                it.Issues.Add("Cannot depend on itself");
-                            }
-                        }
+                        it.Issues.Add($"{dep} is not installed");
+                        continue;
+                    }
+                    var depModIdx = this.Mods.IndexOf(depMod);
+                    if (!depMod.IsEnabled)
+                    {
+                        it.Issues.Add($"{dep} should be enabled");
+                    }
+                    if (depModIdx > i)
+                    {
+                        it.Issues.Add($"{dep} should be higher than {it.Name}");
+                    } 
+                    else if (depModIdx == i)
+                    {
+                        it.Issues.Add("Cannot depend on itself");
                     }
                 }
             }
@@ -319,6 +330,47 @@ namespace StellarisModManager.Core
             this.Mods.Clear();
             foreach(var entry in order) this.Mods.Add(entry);
             this.Validate();
+            this.CalculateConficts();
+        }
+
+        public void CalculateConficts()
+        {
+            this._conflicts.Clear();
+            foreach (var entry in this.Mods)
+            {
+                entry.Overwrites = false;
+                entry.IsOverwritten = false;
+            }
+
+            var enabled = this.Mods.Where(x => x.IsEnabled).ToArray();
+            for (var i = 0; i < enabled.Length - 2; i++)
+            {
+                var mod1 = enabled[i];
+                for(var j = i + 1; j < enabled.Length - 1; j++)
+                {
+                    var mod2 = enabled[j];
+                    this.AddModsConfict(mod1, mod2);
+                }
+            }
+        }
+
+        private void AddModsConfict(ModEntry mod1, ModEntry mod2)
+        {
+            var modConflict = new ModConflict(mod1, mod2);
+            foreach (var file in mod1.ModData.Files)
+            {
+                if (mod2.ModData.Files.Any(x => x.Path.Equals(file.Path, StringComparison.OrdinalIgnoreCase)))
+                {
+                    modConflict.AddConflictFile(file.Path);
+                }
+            }
+
+            if (modConflict.ConflictFiles.Count > 0)
+            {
+                mod1.IsOverwritten = true;
+                mod2.Overwrites = true;
+                this._conflicts.Add(modConflict);
+            }
         }
     }
 }

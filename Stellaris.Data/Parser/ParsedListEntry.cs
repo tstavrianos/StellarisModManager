@@ -5,9 +5,9 @@ namespace Stellaris.Data.Parser
     public sealed class ParsedListEntry: IParsedEntry
     {
         public string Name { get; }
-        public IEnumerable<string> Values { get; set; }
+        public IList<string> Values { get; set; }
         
-        public ParsedListEntry(string name, IEnumerable<string> values)
+        public ParsedListEntry(string name, IList<string> values)
         {
             this.Name = name;
             this.Values = values;

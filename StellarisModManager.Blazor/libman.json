@@ -42,6 +42,18 @@
                 "webfonts/fa-solid-900.woff",
                 "webfonts/fa-solid-900.woff2"
             ]
+        },
+        {
+            "library": "@mdi/font@5.0.45",
+            "provider": "unpkg",
+            "destination": "wwwroot/lib/mdi",
+            "files": [
+                "css/materialdesignicons.min.css",
+                "fonts/materialdesignicons-webfont.eot",
+                "fonts/materialdesignicons-webfont.ttf",
+                "fonts/materialdesignicons-webfont.woff",
+                "fonts/materialdesignicons-webfont.woff2"
+            ]
         }
     ]
 }

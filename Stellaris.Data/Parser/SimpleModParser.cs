@@ -109,7 +109,7 @@ namespace Stellaris.Data.Parser
             return ret;
         }
 
-        private IEnumerable<string> GetList()
+        private IList<string> GetList()
         {
             var ret = new List<string>();
 

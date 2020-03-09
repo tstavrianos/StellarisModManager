@@ -7,73 +7,81 @@
     <div class="col-2">
         <div class="row">
             <div class="btn-group-vertical container-fluid text-nowrap" role="group" aria-label="First group">
-                <button type="button" class="btn btn-light text-left" @onclick="@(MoveToTop)"><i class="fas fa-angle-double-up"></i>&nbsp;Top</button>
-                <button type="button" class="btn btn-light text-left" @onclick="@(MoveUp)"><i class="fas fa-angle-up"></i>&nbsp;Up</button>
-                <button type="button" class="btn btn-light text-left" @onclick="@(MoveDown)"><i class="fas fa-angle-down"></i>&nbsp;Down</button>
-                <button type="button" class="btn btn-light text-left" @onclick="@(MoveToBottom)"><i class="fas fa-angle-double-down"></i>&nbsp;Bottom</button>
+                <button type="button" class="btn btn-light text-left" @onclick="@(MoveToTop)"><i class="mdi mdi-chevron-double-up" aria-hidden="true"></i>&nbsp;Top</button>
+                <button type="button" class="btn btn-light text-left" @onclick="@(MoveUp)"><i class="mdi mdi-chevron-up" aria-hidden="true"></i>&nbsp;Up</button>
+                <button type="button" class="btn btn-light text-left" @onclick="@(MoveDown)"><i class="mdi mdi-chevron-down" aria-hidden="true"></i>&nbsp;Down</button>
+                <button type="button" class="btn btn-light text-left" @onclick="@(MoveToBottom)"><i class="mdi mdi-chevron-double-down" aria-hidden="true"></i>&nbsp;Bottom</button>
             </div>
         </div>
         <div class="row">&nbsp;</div>
         <div class="row">
             <div class="btn-group-vertical container-fluid text-nowrap" role="group" aria-label="Second group">
-              <button type="button" class="btn btn-light text-left" @onclick="@(Alpha)"><i class="fas fa-sort-alpha-down"></i>&nbsp;Alphabetical</button>
-                <button type="button" class="btn btn-light text-left" @onclick="@(Reverse)"><i class="fas fa-undo-alt"></i>&nbsp;Reverse</button>
-                <button type="button" class="btn btn-light text-left" @onclick="@(TopologicalSort)"><i class="fas fa-sort-amount-down-alt"></i>&nbsp;Topological Sort</button>
-                <button type="button" class="btn btn-light text-left disabled"><i class="fas fa-hammer"></i>&nbsp;Load Order Fixer</button>
+              <button type="button" class="btn btn-light text-left" @onclick="@(Alpha)"><i class="mdi mdi-sort-alphabetical-ascending" aria-hidden="true"></i>&nbsp;Alphabetical</button>
+                <button type="button" class="btn btn-light text-left" @onclick="@(Reverse)"><i class="mdi mdi-sort-descending" aria-hidden="true"></i>&nbsp;Reverse</button>
+                <button type="button" class="btn btn-light text-left" @onclick="@(TopologicalSort)"><i class="mdi mdi-sort-bool-ascending" aria-hidden="true"></i>&nbsp;Topological Sort</button>
+                <button type="button" class="btn btn-light text-left disabled"><i class="mdi mdi-auto-fix" aria-hidden="true"></i>&nbsp;Load Order Fixer</button>
             </div>
         </div>
         <div class="row">&nbsp;</div>
         <div class="row">
             <div class="btn-group-vertical container-fluid text-nowrap" role="group" aria-label="Third group">
-                <button type="button" class="btn btn-light text-left" @onclick="@(CheckAll)"><i class="far fa-check-square"></i>&nbsp;All</button>
-                <button type="button" class="btn btn-light text-left" @onclick="@(UncheckAll)"><i class="far fa-square"></i>&nbsp;None</button>
-                <button type="button" class="btn btn-light text-left" @onclick="@(InvertChecked)"><i class="fas fa-check-square"></i>&nbsp;Invert</button>
+                <button type="button" class="btn btn-light text-left" @onclick="@(CheckAll)"><i class="mdi mdi-check-box-multiple-outline" aria-hidden="true"></i>&nbsp;All</button>
+                <button type="button" class="btn btn-light text-left" @onclick="@(UncheckAll)"><i class="mdi mdi-checkbox-multiple-blank-outline" aria-hidden="true"></i>&nbsp;None</button>
+                <button type="button" class="btn btn-light text-left" @onclick="@(InvertChecked)"><i class="mdi mdi-checkbox-multiple-marked" aria-hidden="true"></i>&nbsp;Invert</button>
             </div>
         </div>
         <div class="row">&nbsp;</div>
         <div class="row">
             <div class="btn-group-vertical container-fluid text-nowrap" role="group" aria-label="fourth group">
-              <button type="button" class="btn btn-light text-left" @onclick="@(Save)"><i class="fas fa-save"></i>&nbsp;Save</button>
+              <button type="button" class="btn btn-light text-left" @onclick="@(Save)"><i class="mdi mdi-content-save-outline" aria-hidden="true"></i>&nbsp;Save</button>
             </div>
         </div>
     </div>
     <div class="col-9">
-        <ul ondragover="event.preventDefault();" class="list-group">
+        <table ondragover="event.preventDefault();" class="table table-sm">
             @foreach (var item in _manager.Mods)
             {
                 if (item != null)
                 {
-                    <li draggable="true" @key="@item.Guid" tabindex="1" class="list-group-item @(item.IsSelected?"active":"") @(item.ModData.Valid?"":"list-group-item-danger")" @onmousedown="@((e) => ItemSelected(e, item))"
-                        @ondrop="@(()=> Drop(item))" @ondrag="@(()=> StartDrag(item))">
-                        @if (item.IsEnabled)
-                        {
-                            <span @onclick="@(() => ItemClick(item))"><i class="far fa-check-square"></i></span>
-                        }
-                        else
-                        {
-                            <span @onclick="@(() => ItemClick(item))"><i class="far fa-square"></i></span>
-                        }
-                        <span>@item.Name
-                            @if (item.ModData.Tags != null)
+                    <tr draggable="true" @key="@item.Guid" tabindex="1" class="@(item.IsSelected?"table-active":"") @(item.ModData.Valid?"":"table-danger")" @onmousedown="@((e) => ItemSelected(e, item))"
+                        @ondrop="@(()=> Drop(item))" @ondrag="@(()=> StartDrag(item))"><td>
+                            @if (item.IsEnabled)
                             {
-                                @foreach (var tag in item.ModData.Tags)
-                                {
-                                    <span class="badge badge-info">@tag</span>
-                                }
+                                <span @onclick="@(() => ItemClick(item))"><i class="mdi mdi-check-box-outline" aria-hidden="true"></i></span>
                             }
-                        @if (item.Issues.Count > 0)
-                        {
-                            <span class="badge badge-warning" data-toggle="tooltip" title="@item.IssuesHtml">@item.Issues.Count</span>
-                        }
-                        </span>
-                    </li>
-                }
-                else
-                {
-                    <li class="list-group-item">NULL??</li>
+                            else
+                            {
+                                <span @onclick="@(() => ItemClick(item))"><i class="mdi mdi-checkbox-blank-outline" aria-hidden="true"></i></span>
+                            }
+                            <span>@item.Name
+                                @if (item.Overwrites && !item.IsOverwritten)
+                                {
+                                    <span class="badge badge-success"><i class="mdi mdi-plus" aria-hidden="true"></i></span>
+                                }
+                                else if (item.Overwrites && item.IsOverwritten)
+                                {
+                                    <span class="badge badge-warning"><i class="mdi mdi-plus-minus" aria-hidden="true"></i></span>
+                                }
+                                else if (!item.Overwrites && item.IsOverwritten)
+                                {
+                                    <span class="badge badge-danger"><i class="mdi mdi-minus" aria-hidden="true"></i></span>
+                                }
+                                @if (item.ModData.Tags != null)
+                                {
+                                    @foreach (var tag in item.ModData.Tags)
+                                    {
+                                        <span class="badge badge-info">@tag</span>
+                                    }
+                                }
+                                @if (item.Issues.Count > 0)
+                                {
+                                    <span class="badge badge-warning" data-toggle="tooltip" title="@item.IssuesHtml">@item.Issues.Count</span>
+                                }
+                            </span></td>
+                    </tr>
                 }
             }
-        </ul>
+        </table>
     </div>
 </div>
 

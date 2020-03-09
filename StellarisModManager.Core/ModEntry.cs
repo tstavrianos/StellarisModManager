@@ -47,7 +47,10 @@ namespace StellarisModManager.Core
         
         public IList<string> Issues { get; }
 
-        public string IssuesHtml => string.Join("<br/>", this.Issues);
+        public string IssuesHtml => string.Join('\n', this.Issues);
+        
+        public bool Overwrites { get; set; }
+        public bool IsOverwritten { get; set; }
         
         public ModEntry(Mod mod, string guid, ModsRegistryEntry entry)
         {

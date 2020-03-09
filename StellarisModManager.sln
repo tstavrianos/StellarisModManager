@@ -11,8 +11,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StellarisModManager.Blazor"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StellarisModManager.Core", "StellarisModManager.Core\StellarisModManager.Core.csproj", "{EEC8F786-3A4D-4077-BCC3-14A3B602A0A3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pdoxcl2Sharp", "Pdoxcl2Sharp\Pdoxcl2Sharp.csproj", "{B6E9B03D-3223-44BF-99CB-E0C3D0B7E8A9}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,14 +49,6 @@ Global
 		{EEC8F786-3A4D-4077-BCC3-14A3B602A0A3}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EEC8F786-3A4D-4077-BCC3-14A3B602A0A3}.Release|x64.ActiveCfg = Release|Any CPU
 		{EEC8F786-3A4D-4077-BCC3-14A3B602A0A3}.Release|x64.Build.0 = Release|Any CPU
-		{B6E9B03D-3223-44BF-99CB-E0C3D0B7E8A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B6E9B03D-3223-44BF-99CB-E0C3D0B7E8A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B6E9B03D-3223-44BF-99CB-E0C3D0B7E8A9}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{B6E9B03D-3223-44BF-99CB-E0C3D0B7E8A9}.Debug|x64.Build.0 = Debug|Any CPU
-		{B6E9B03D-3223-44BF-99CB-E0C3D0B7E8A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B6E9B03D-3223-44BF-99CB-E0C3D0B7E8A9}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B6E9B03D-3223-44BF-99CB-E0C3D0B7E8A9}.Release|x64.ActiveCfg = Release|Any CPU
-		{B6E9B03D-3223-44BF-99CB-E0C3D0B7E8A9}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
