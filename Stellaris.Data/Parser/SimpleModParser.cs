@@ -39,8 +39,7 @@ namespace Stellaris.Data.Parser
                     }
                     else
                     {
-                        Mod.Logger.Error($"Unexpected character: {c}");
-                        throw new Exception();
+                        throw new Exception($"Unexpected character: {c}");
                     }
                 }
                 else if (c == '"')

@@ -4,14 +4,19 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
-using Stellaris.Data;
+using PDXModLib.ModData;
+using Serilog;
+using Serilog.Core;
+using Serilog.Exceptions;
 using Stellaris.Data.Json;
 using Stellaris.Data.Parser;
 
 namespace StellarisModManager.Core
 {
-    public sealed class ModManager
+    public sealed class ModManager: IDisposable
     {
+        private readonly Logger _logger;
+
         public ObservableCollection<ModEntry> Mods { get; }
         public string BasePath { get; }
         public string ModPath { get; }
@@ -20,17 +25,31 @@ namespace StellarisModManager.Core
 
         public ModManager(IParser parser = null)
         {
+            this._logger = new LoggerConfiguration()//
+#if DEBUG
+                .MinimumLevel.Debug()//
+                .Enrich.WithExceptionDetails()//
+#else
+                .MinimumLevel.Information()//
+#endif
+                .Enrich.FromLogContext()//
+                .WriteTo.File("mod_manager.log")//
+                .CreateLogger();//
+
             this._conflicts = new List<ModConflict>();
             this.Mods = new ObservableCollection<ModEntry>();
             this.BasePath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\\Paradox Interactive\\Stellaris";
+            this.BasePath = @"C:\usefull\Newfolder\git\StellarisModManager\Stellaris";
             this.ModPath = Path.Combine(this.BasePath, "mod");
             if(parser == null) parser = new SimpleModParser();
             var mods = new List<Mod>();
-            foreach (var file in Directory.EnumerateFiles(ModPath, "*.mod"))
+            foreach (var file in Directory.EnumerateFiles(this.ModPath, "*.mod"))
             {
-                var parsed = parser.Parse(file);
-                var mod = new Mod(parsed);
-                mod.Validate(file);
+                //var parsed = parser.Parse(file);
+                //var mod = new Mod(parsed);
+                //var mod = new Mod(file);
+                //mod.Validate(file);
+                var mod = Mod.Load(file);
                 mods.Add(mod);
             }
 
@@ -50,13 +69,11 @@ namespace StellarisModManager.Core
 
             foreach (var x1 in mods)
             {
-                if (this.Mods.All(y => y.ModData.Key != x1.Key))
-                {
-                    var found = modsRegistry.Where(x => x1.Matches(x.Value)).Select(x => x.Value).FirstOrDefault();
-                    var it = new ModEntry(x1, found?.Id, found);
-                    it.IsEnabled = dlcLoad.EnabledMods.Any(x => x.Equals(it.ModData.Key, StringComparison.OrdinalIgnoreCase));
-                    this.Mods.Add(it);
-                }
+                if (this.Mods.Any(y => y.ModData.Key == x1.Key)) continue;
+                var found = modsRegistry.Where(x => x1.Matches(x.Value)).Select(x => x.Value).FirstOrDefault();
+                var it = new ModEntry(x1, found?.Id, found);
+                it.IsEnabled = dlcLoad.EnabledMods.Any(x => x.Equals(it.ModData.Key, StringComparison.OrdinalIgnoreCase));
+                this.Mods.Add(it);
             }
 
             this.Validate();
@@ -123,26 +140,26 @@ namespace StellarisModManager.Core
                     entry = new ModsRegistryEntry
                     {
                         Id = item.Guid.ToString(),
-                        Source = !string.IsNullOrWhiteSpace(item.ModData.Path)
-                                 && (item.ModData.Path.StartsWith(
+                        Source = !string.IsNullOrWhiteSpace(item.ModData.Folder)
+                                 && (item.ModData.Folder.StartsWith(
                                          this.BasePath,
                                          StringComparison.OrdinalIgnoreCase)
-                                     || item.ModData.Path.StartsWith("mod/", StringComparison.OrdinalIgnoreCase))
+                                     || item.ModData.Folder.StartsWith("mod/", StringComparison.OrdinalIgnoreCase))
                             ? SourceType.local
                             : SourceType.steam,
                         Status = item.ModData.Valid ? StatusType.ready_to_play : StatusType.invalid_mod,
                         SteamId = $"{item.ModData.RemoteFileId}",
                         DisplayName = item.ModData.Name,
                         GameRegistryId = item.ModData.Key,
-                        RequiredVersion = item.ModData.SupportedVersion ?? "1.*",
+                        RequiredVersion = item.ModData.SupportedVersion.ToString(),
                         Tags = new List<string>(item.ModData.Tags)
                     };
-                    if (!string.IsNullOrWhiteSpace(item.ModData.Archive))
+                    if (!string.IsNullOrWhiteSpace(item.ModData.FileName))
                     {
-                        entry.ArchivePath = item.ModData.Archive;
+                        entry.ArchivePath = item.ModData.FileName;
                     }
 
-                    if (!string.IsNullOrWhiteSpace(item.ModData.Path)) entry.DirPath = item.ModData.Path;
+                    if (!string.IsNullOrWhiteSpace(item.ModData.Folder)) entry.DirPath = item.ModData.Folder;
                 }
 
                 modsRegistry.Add(entry.Id, entry);
@@ -314,63 +331,72 @@ namespace StellarisModManager.Core
 
         public void TopologicalSort()
         {
-            var sorter = new TopologicalSorter<ModEntry>();
-            foreach (var entry in this.Mods)
+            try
             {
-                var dependencies = entry.ModData.Dependencies?.Select(d => this.Mods.FirstOrDefault(x => x.Name == d)).Where(found => found != null).ToList();
-                if (dependencies?.Count > 0)
-                {
-                    sorter.Add(entry, dependencies);
-                    continue;
-                }
-                sorter.Add(entry);
+                var sorted1 = this.Mods.TopologicalSort(x => x.ModData.Dependencies?.Select(d => this.Mods.FirstOrDefault(y => string.Equals(y.Name, d, StringComparison.OrdinalIgnoreCase))).Where(m => m != null) ?? Enumerable.Empty<ModEntry>()).ToArray();
+                this.Mods.Clear();
+                foreach (var entry in sorted1) this.Mods.Add(entry);
+                this.Validate();
+                this.CalculateConficts();
             }
-
-            var order = sorter.Sort().Item1;
-            this.Mods.Clear();
-            foreach(var entry in order) this.Mods.Add(entry);
-            this.Validate();
-            this.CalculateConficts();
+            catch (Exception e)
+            {
+                this._logger.Error(e, "TopologicalSort");
+            }
         }
 
         public void CalculateConficts()
         {
-            this._conflicts.Clear();
-            foreach (var entry in this.Mods)
+            try 
             {
-                entry.Overwrites = false;
-                entry.IsOverwritten = false;
-            }
-
-            var enabled = this.Mods.Where(x => x.IsEnabled).ToArray();
-            for (var i = 0; i < enabled.Length - 2; i++)
-            {
-                var mod1 = enabled[i];
-                for(var j = i + 1; j < enabled.Length - 1; j++)
+                this._conflicts.Clear();
+                foreach (var entry in this.Mods)
                 {
-                    var mod2 = enabled[j];
-                    this.AddModsConfict(mod1, mod2);
+                    entry.Overwrites = false;
+                    entry.IsOverwritten = false;
                 }
+
+                var enabled = this.Mods.Where(x => x.IsEnabled).ToArray();
+                for (var i = 0; i < enabled.Length - 2; i++)
+                {
+                    var mod1 = enabled[i];
+                    for(var j = i + 1; j < enabled.Length - 1; j++)
+                    {
+                        var mod2 = enabled[j];
+                        this.AddModsConfict(mod1, mod2);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                this._logger.Error(e, "CalculateConficts");
             }
         }
 
         private void AddModsConfict(ModEntry mod1, ModEntry mod2)
         {
-            var modConflict = new ModConflict(mod1, mod2);
-            foreach (var file in mod1.ModData.Files)
+            try 
             {
-                if (mod2.ModData.Files.Any(x => x.Path.Equals(file.Path, StringComparison.OrdinalIgnoreCase)))
+                var modConflict = new ModConflict(mod1, mod2);
+                foreach (var file in mod1.ModData.Files.Where(file => mod2.ModData.Files.Any(x => x.Path.Equals(file.Path, StringComparison.OrdinalIgnoreCase))))
                 {
                     modConflict.AddConflictFile(file.Path);
                 }
-            }
 
-            if (modConflict.ConflictFiles.Count > 0)
-            {
+                if (modConflict.ConflictFiles.Count <= 0) return;
                 mod1.IsOverwritten = true;
                 mod2.Overwrites = true;
                 this._conflicts.Add(modConflict);
             }
+            catch (Exception e)
+            {
+                this._logger.Error(e, "AddModsConfict");
+            }            
+        }
+
+        public void Dispose()
+        {
+            this._logger.Dispose();
         }
     }
 }

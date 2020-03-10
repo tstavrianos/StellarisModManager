@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using Stellaris.Data;
+using PDXModLib.ModData;
 using Stellaris.Data.Json;
 
 namespace StellarisModManager.Core
