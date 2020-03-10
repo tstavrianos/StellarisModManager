@@ -15,8 +15,8 @@ namespace PDXModLib.GameContext
     {
         private readonly IGameConfiguration _gameConfiguration;
         private readonly INotificationService _notificationService;
-		private readonly ILogger _logger;
-		private readonly List<Mod> _mods = new List<Mod>();
+        private readonly ILogger _logger;
+        private readonly List<Mod> _mods = new List<Mod>();
 
         public IEnumerable<Mod> Mods => _mods;
 
@@ -24,8 +24,8 @@ namespace PDXModLib.GameContext
         {
             _gameConfiguration = gameConfiguration;
             _notificationService = notificationService;
-			_logger = logger;
-		}
+            _logger = logger;
+        }
 
         public void Initialize()
         {
@@ -33,20 +33,20 @@ namespace PDXModLib.GameContext
         }
 
         public void LoadMods()
-        { 
+        {
             foreach (var file in Directory.EnumerateFiles(_gameConfiguration.ModsDir, "*.mod"))
             {
-				var fileName = Path.GetFileName(file);
+                var fileName = Path.GetFileName(file);
 
                 if (Mods.Any(m => m.Id == fileName))
                 {
-					_logger.Debug($"Mod file skipped as it is already loaded: {fileName}");
+                    _logger.Debug($"Mod file skipped as it is already loaded: {fileName}");
 
-					continue;
+                    continue;
                 }
 
-				_logger.Debug($"Loading mod file: {file}");
-				Mod mod = null;
+                _logger.Debug($"Loading mod file: {file}");
+                Mod mod = null;
                 try
                 {
                     mod = Mod.Load(file);
@@ -68,9 +68,9 @@ namespace PDXModLib.GameContext
         {
             try
             {
-				_logger.Debug($"Saving mod: {mod.FileName} to {_gameConfiguration.ModsDir}");
+                _logger.Debug($"Saving mod: {mod.FileName} to {_gameConfiguration.ModsDir}");
 
-				var path = Path.Combine(_gameConfiguration.ModsDir, mod.FileName);
+                var path = Path.Combine(_gameConfiguration.ModsDir, mod.FileName);
 
                 var descPath = Path.Combine(_gameConfiguration.ModsDir, $"{mod.FileName}.mod");
 
@@ -85,18 +85,18 @@ namespace PDXModLib.GameContext
                     File.Delete(descPath);
                 }
 
-				var node = new Node(mod.Name);
-				node.AllChildren = mod.ToDescriptor().ToList();
-				var visitor = new PrintingVisitor();
-				visitor.Visit(node);
+                var node = new Node(mod.Name);
+                node.AllChildren = mod.ToDescriptor().ToList();
+                var visitor = new PrintingVisitor();
+                visitor.Visit(node);
 
-				var contents = visitor.Result;
+                var contents = visitor.Result;
 
                 File.WriteAllText(descPath, contents);
 
-				var files = mod.Files.AsEnumerable();
-				if (mergeResultOnly)
-					files = files.OfType<MergedModFile>();
+                var files = mod.Files.AsEnumerable();
+                if (mergeResultOnly)
+                    files = files.OfType<MergedModFile>();
 
                 using (var saver = new DiskFileSaver(path))
                 {

@@ -11,125 +11,179 @@ using Serilog.Core;
 
 namespace PDXModLib.ModData
 {
-	public class Mod : IDisposable
-	{
-		private ZipFile _zipFile;
+    using System.Text;
 
-		private static readonly Logger Log;
+    using Serilog;
+    using Serilog.Exceptions;
 
-		private string _archive;
+    public class Mod : IDisposable
+    {
+        private ZipFile _zipFile;
 
-		private string _folder;
+        private static readonly Logger Log;
 
-		protected Mod(string id)
-		{
-			Id = id;
-		}
+        static Mod()
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-		public string Id { get; }
+#if DEBUG
+            Log = new LoggerConfiguration()//
+                .MinimumLevel.Debug()//
+                .Enrich.WithExceptionDetails()//
+                .Enrich.FromLogContext()//
+                .WriteTo.File("Mod.log")//
+                .CreateLogger();//
+#endif
+        }
 
-		public string Key => $"mod/{Id}";
+        private string _archive;
 
-		public string Name { get; set; }
+        private string _folder;
 
-		public List<ModFile> Files { get; } = new List<ModFile>();
+        protected Mod(string id)
+        {
+            this.Id = id;
+        }
 
-		public List<string> Tags { get; } = new List<string>();
+        public string Id { get; }
+
+        public string Key => $"mod/{this.Id}";
+
+        private string _name;
+
+        public string Name
+        {
+            get => this._name;
+            set => this._name = value;
+        }
+
+        public List<ModFile> Files { get; } = new List<ModFile>();
+
+        public List<string> Tags { get; } = new List<string>();
         public List<string> Dependencies { get; } = new List<string>();
 
-		public virtual string FileName => _archive;
+        public virtual string FileName => this._archive;
 
-		public virtual string Folder => _folder;
+        public virtual string Folder => this._folder;
 
-		public bool ParseError { get; set; }
+        public bool ParseError { get; set; }
 
-		public string Description { get; private set; }
+        public string Description { get; private set; }
 
-		public string PictureName { get; private set; }
+        private string _pictureName;
 
-		public string RemoteFileId { get; private set; }
+        public string PictureName
+        {
+            get => this._pictureName;
+            private set => this._pictureName = value;
+        }
 
-		public SupportedVersion SupportedVersion { get; protected set; }
+        private string _remoteFileId;
 
-		static Mod()
-		{
-		}
+        public string RemoteFileId
+        {
+            get => this._remoteFileId;
+            private set => this._remoteFileId = value;
+        }
 
-		public static Mod Load(string modDescriptor)
+        public SupportedVersion SupportedVersion { get; protected set; }
+
+        public bool Valid { get; private set; }
+
+        public static Mod Load(string modDescriptor)
         {
             var id = Path.GetFileName(modDescriptor);
             var mod = new Mod(id);
 
-            IEnumerable<string> tags;
-            IEnumerable<string> dependencies;
-			var adapter = CWToolsAdapter.Parse(modDescriptor);
+            IEnumerable<string> tags = null;
+            IEnumerable<string> dependencies = null;
+            var adapter = CWToolsAdapter.Parse(modDescriptor);
 
             {
-				mod.Name = adapter.Root.Get("name").AsString(); 
+                adapter.Root.TryGetString("name", ref mod._name);
+                adapter.Root.TryGetString("archive", ref mod._archive);
+                adapter.Root.TryGetString("path", ref mod._folder);
 
-                mod._archive = adapter.Root.Get("archive").AsString();
-                mod._folder = adapter.Root.Get("path").AsString();
 
                 if (string.IsNullOrEmpty(mod._archive) &&
                     string.IsNullOrEmpty(mod._folder))
                 {
-                    Log.Debug($"Both archive and folder for {modDescriptor} are empty");
+                    Log?.Debug($"Both archive and folder for {modDescriptor} are empty");
                     mod.Name = id;
                     mod.ParseError = true;
                     return mod;
                 }
 
-				mod.PictureName = adapter.Root.Get("picture").AsString();
+                adapter.Root.TryGetString("picture", ref mod._pictureName);
+                adapter.Root.TryGetStrings("tags", ref tags);
+                adapter.Root.TryGetStrings("dependencies", ref dependencies);
 
-                tags = adapter.Root.Child("tags").Value.LeafValues.Select(s => s.Value.ToRawString()).ToList();
-                dependencies = adapter.Root.Child("dependencies").Value.LeafValues.Select(s => s.Value.ToRawString())
-                    .ToList();
-                mod.SupportedVersion = new SupportedVersion(adapter.Root.Get("supported_version").AsString());
-				mod.RemoteFileId = (adapter.Root.Get("remote_file_id").AsString());
+                mod.SupportedVersion = adapter.Root.Exists("supported_version") ? new SupportedVersion(adapter.Root.Get("supported_version").AsString()) : new SupportedVersion(0, 0, 0);
+                adapter.Root.TryGetString("remote_file_id", ref mod._remoteFileId);
             }
 
             if (tags != null)
             {
-                mod.Description = string.Join(", ", tags.Where(t => t != null).ToArray());
-                mod.Tags.AddRange(tags.Where(t => t != null));
+                mod.Description = string.Join(", ", tags);
+                mod.Tags.AddRange(tags);
             }
 
             if (dependencies != null)
             {
-                mod.Dependencies.AddRange(dependencies.Where(t => t != null));
+                mod.Dependencies.AddRange(dependencies);
             }
             return mod;
         }
 
         public void LoadFiles(string basePath)
         {
-            var mPath = Path.Combine(basePath, _archive ?? _folder);
-
-            if (System.IO.Path.GetExtension(mPath) == ".zip" && !File.Exists(mPath))
+            this.Valid = true;
+            if (string.IsNullOrWhiteSpace(this.Folder) && string.IsNullOrWhiteSpace(this.FileName))
             {
-                if (Directory.Exists(System.IO.Path.GetDirectoryName(mPath))
-                    && File.Exists(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(mPath), "descriptor.mod")))
+                this.Valid = false;
+                Log?.Debug($"{this.Id} - Path and Archive are blank");
+            }
+
+            var mPath = Path.Combine(basePath, this._archive ?? this._folder);
+
+            if (Path.GetExtension(mPath) == ".zip" && !File.Exists(mPath))
+            {
+                if (Directory.Exists(Path.GetDirectoryName(mPath))
+                    && File.Exists(Path.Combine(Path.GetDirectoryName(mPath), "descriptor.mod")))
                 {
-                    mPath = System.IO.Path.GetDirectoryName(mPath);
+                    mPath = Path.GetDirectoryName(mPath);
                     this._archive = null;
                     this._folder = mPath;
                 }
             }
-            
+
+            if (Path.GetExtension(mPath) == ".zip" && !File.Exists(mPath))
+            {
+                this.Valid = false;
+                Log?.Debug($"{this.Id} - Archive does not exist");
+            }
+            else if (Path.GetExtension(mPath) != ".zip" && !Directory.Exists(mPath))
+            {
+                this.Valid = false;
+                Log?.Debug($"{this.Id} - Path does not exist");
+            }
+
+            if (!this.Valid) return;
+
             if (Path.GetExtension(mPath) == ".zip")
             {
-				_zipFile = new ZipFile(mPath);
+                this._zipFile = new ZipFile(mPath);
 
-				foreach (var item in _zipFile.OfType<ZipEntry>())
+                foreach (var item in this._zipFile.OfType<ZipEntry>())
                 {
-					var filename = Path.GetFileName(item.Name);
-                    if (string.Compare(item.Name, "descriptor.mod", true) == 0)
+                    var filename = Path.GetFileName(item.Name);
+                    if (string.Compare(item.Name, "descriptor.mod", StringComparison.OrdinalIgnoreCase) == 0)
                     {
                         continue;
                     }
 
-                    var modFile = ModFile.Load(new ZipFileLoader(_zipFile, item), item.Name, this);
-                    Files.Add(modFile);
+                    var modFile = ModFile.Load(new ZipFileLoader(this._zipFile, item), item.Name, this);
+                    this.Files.Add(modFile);
                 }
             }
             else
@@ -138,62 +192,72 @@ namespace PDXModLib.ModData
                 var paths = Directory.EnumerateFiles(mPath, "*.*", SearchOption.AllDirectories);
                 foreach (var path in paths)
                 {
-                    if (string.Compare(Path.GetFileName(path), "descriptor.mod", true) != 0)
+                    if (string.Compare(Path.GetFileName(path), "descriptor.mod", StringComparison.OrdinalIgnoreCase) != 0)
                     {
                         var refPath = Uri.UnescapeDataString(new Uri(mPath).MakeRelativeUri(new Uri(path)).OriginalString);
                         var modFile = ModFile.Load(new DiskFileLoader(path), refPath, this);
-                        Files.Add(modFile);
+                        this.Files.Add(modFile);
                     }
                 }
+            }
 
+            var scFiles = this.Files.Where(x => (x is SCModFile a) && a.ParseError).Cast<SCModFile>().ToArray();
+            if (scFiles.Length > 0)
+            {
+                this.Valid = false;
+                Log?.Debug($"{this.Id} - Files with errors");
+                foreach (var x in scFiles)
+                {
+                    Log?.Debug($"{this.Id} - {x.Path} - {x.ParseErrorMessage}");
+                }
             }
         }
 
-        protected virtual Child SCName => Child.NewLeafC(new Leaf("name", Value.NewQString(Name), Position.range.Zero));
-        protected virtual Child SCFileName => Child.NewLeafC(new Leaf("archive", Value.NewQString(FileName), Position.range.Zero));
-        protected virtual Child SCTags => Child.NewNodeC(CreateTags());
-        protected virtual Child SCSupportedVersion => Child.NewLeafC(new Leaf("supported_version", Value.NewQString(SupportedVersion.ToString()), Position.range.Zero));
+        protected virtual Child SCName => Child.NewLeafC(new Leaf("name", Value.NewQString(this.Name), Position.range.Zero));
+        protected virtual Child SCFileName => Child.NewLeafC(new Leaf("archive", Value.NewQString(this.FileName), Position.range.Zero));
+        protected virtual Child SCTags => Child.NewNodeC(this.CreateTags());
+        protected virtual Child SCSupportedVersion => Child.NewLeafC(new Leaf("supported_version", Value.NewQString(this.SupportedVersion.ToString()), Position.range.Zero));
 
-		private Node CreateTags()
-		{
-			var result = new Node("tags");
-			result.AllChildren = Tags.Select(s => Child.NewLeafValueC(new LeafValue(Value.NewQString(s), Position.range.Zero))).ToList();
-			return result;
-		}
+        private Node CreateTags()
+        {
+            var result = new Node("tags");
+            result.AllChildren = this.Tags.Select(s => Child.NewLeafValueC(new LeafValue(Value.NewQString(s), Position.range.Zero))).ToList();
+            return result;
+        }
 
-        public IEnumerable<Child> DescriptorContents => ToDescriptor();
+        public IEnumerable<Child> DescriptorContents => this.ToDescriptor();
 
         public IEnumerable<Child> ToDescriptor()
         {
-            yield return SCName;
-            yield return SCFileName;
-            yield return SCTags;
-            if (!string.IsNullOrEmpty(PictureName))
-                yield return Child.NewLeafC(new Leaf("picture", Value.NewQString(PictureName), Position.range.Zero));
+            yield return this.SCName;
+            yield return this.SCFileName;
+            yield return this.SCTags;
+            if (!string.IsNullOrEmpty(this.PictureName))
+                yield return Child.NewLeafC(new Leaf("picture", Value.NewQString(this.PictureName), Position.range.Zero));
 
-			yield return SCSupportedVersion;
+            yield return this.SCSupportedVersion;
         }
 
         public void Dispose()
         {
-            _zipFile?.Close();
+            this._zipFile?.Close();
         }
 
         public override int GetHashCode()
         {
-            return Id.GetHashCode();
+            return this.Id.GetHashCode();
         }
 
         public override bool Equals(object obj)
         {
-            return (obj as Mod)?.Id == Id;
+            return (obj as Mod)?.Id == this.Id;
         }
 
-		public override string ToString()
-		{
-			return Name;
-		}
-	}
+        public override string ToString()
+        {
+            return this.Name;
+        }
+    }
 
     public class SupportedVersion
     {
@@ -207,38 +271,46 @@ namespace PDXModLib.ModData
         {
             var ver = source.Split('.');
 
-            Major = ver[0] == "*" ? Int32.MaxValue : int.Parse(ver[0]);
-            Minor = ver[1] == "*" ? Int32.MaxValue : int.Parse(ver[1]);
-            Patch = ver[2] == "*" ? Int32.MaxValue : int.Parse(ver[2]);
+            this.Major = int.MaxValue;
+            this.Minor = int.MaxValue;
+            this.Patch = int.MaxValue;
+
+            this.Major = ver[0] == "*" ? int.MaxValue : int.Parse(ver[0]);
+            if (ver.Length > 1)
+            {
+                this.Minor = ver[1] == "*" ? int.MaxValue : int.Parse(ver[1]);
+                if (ver.Length > 2)
+                    this.Patch = ver[2] == "*" ? int.MaxValue : int.Parse(ver[2]);
+            }
         }
 
         public SupportedVersion(int maj, int min, int pat)
         {
-            Major = maj;
-            Minor = min;
-            Patch = pat;
+            this.Major = maj;
+            this.Minor = min;
+            this.Patch = pat;
         }
 
         public static SupportedVersion Combine(IEnumerable<SupportedVersion> source)
         {
-            int ma = Int32.MaxValue;
-            int mi = Int32.MaxValue;
-            int pa = Int32.MaxValue;
+            int ma = int.MaxValue;
+            int mi = int.MaxValue;
+            int pa = int.MaxValue;
 
             foreach (var s in source)
             {
                 if (ma > s.Major)
                 {
                     ma = s.Major;
-                    mi = Int32.MaxValue;
-                    pa = Int32.MaxValue;
+                    mi = int.MaxValue;
+                    pa = int.MaxValue;
                 }
                 else if (ma == s.Major)
                 {
                     if (mi > s.Minor)
                     {
                         mi = s.Minor;
-                        pa = Int32.MaxValue;
+                        pa = int.MaxValue;
                     }
                     else
                     {
@@ -253,9 +325,9 @@ namespace PDXModLib.ModData
 
         public override string ToString()
         {
-            var mj = Major < Int32.MaxValue ? Major.ToString() : "*";
-            var mi = Minor < Int32.MaxValue ? Minor.ToString() : "*";
-            var pa = Patch < Int32.MaxValue ? Patch.ToString() : "*";
+            var mj = this.Major < int.MaxValue ? this.Major.ToString() : "*";
+            var mi = this.Minor < int.MaxValue ? this.Minor.ToString() : "*";
+            var pa = this.Patch < int.MaxValue ? this.Patch.ToString() : "*";
 
             return $"{mj}.{mi}.{pa}";
         }
@@ -267,13 +339,13 @@ namespace PDXModLib.ModData
         public MergedMod(string name, IEnumerable<ModConflictDescriptor> source)
             : base($"Merge result")
         {
-            Name = name;
+            this.Name = name;
 
             var listSource = source.ToList();
 
-            Tags.AddRange(listSource.Select(mcd => mcd.Mod).SelectMany(m => m.Tags).Distinct());
+            this.Tags.AddRange(listSource.Select(mcd => mcd.Mod).SelectMany(m => m.Tags).Distinct());
 
-            SupportedVersion = SupportedVersion.Combine(listSource.Select(s => s.Mod.SupportedVersion));
+            this.SupportedVersion = SupportedVersion.Combine(listSource.Select(s => s.Mod.SupportedVersion));
 
             var distinctConflicts = listSource.SelectMany(mcd => mcd.FileConflicts).Distinct();
 
@@ -281,22 +353,22 @@ namespace PDXModLib.ModData
             {
                 if (!conflict.ConflictingModFiles.Any())
                 {
-                    Files.Add(conflict.File);
+                    this.Files.Add(conflict.File);
                 }
                 else
                 {
-                    Files.Add(new MergedModFile(conflict.File.Path, conflict.ConflictingModFiles.Concat(new[] {conflict.File}), this));
+                    this.Files.Add(new MergedModFile(conflict.File.Path, conflict.ConflictingModFiles.Concat(new[] { conflict.File }), this));
                 }
             }
         }
 
-        public override string FileName => Name;
+        public override string FileName => this.Name;
 
-        protected override Child SCFileName => Child.NewLeafC(new Leaf("path", Value.NewQString($"mod/{FileName}"), Position.range.Zero));
+        protected override Child SCFileName => Child.NewLeafC(new Leaf("path", Value.NewQString($"mod/{this.FileName}"), Position.range.Zero));
 
         public ModConflictDescriptor ToModConflictDescriptor()
         {
-            return new ModConflictDescriptor(this, Files.Select(ToConflictDescriptor));
+            return new ModConflictDescriptor(this, this.Files.Select(this.ToConflictDescriptor));
         }
 
         ModFileConflictDescriptor ToConflictDescriptor(ModFile file)

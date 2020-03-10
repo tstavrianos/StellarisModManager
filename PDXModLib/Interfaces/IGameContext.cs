@@ -7,17 +7,16 @@ namespace PDXModLib.Interfaces
 {
     public interface IGameContext
     {
-		ModSelection CurrentSelection { get; set; }
-		IReadOnlyList<ModSelection> Selections { get; }
+        ModSelection CurrentSelection { get; set; }
+        IReadOnlyList<ModSelection> Selections { get; }
 
-		Task<bool> Initialize();
+        Task<bool> Initialize();
 
-		bool SaveSettings();
-		bool SaveSelection();
-		Task<bool> SaveMergedMod(MergedMod mod, bool mergedFilesOnly);
-		void DeleteCurrentSelection();
-		void DuplicateCurrentSelection(string newName);
-		void LoadMods();
-
-	}
+        bool SaveSettings();
+        bool SaveSelection();
+        Task<bool> SaveMergedMod(MergedMod mod, bool mergedFilesOnly);
+        void DeleteCurrentSelection();
+        void DuplicateCurrentSelection(string newName);
+        void LoadMods();
+    }
 }

@@ -6,7 +6,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using ICSharpCode.SharpZipLib.Zip;
 using PDXModLib.Utility;
-using Serilog.Core;
 using static CWTools.Process.CK2Process;
 
 namespace PDXModLib.ModData
@@ -22,10 +21,9 @@ namespace PDXModLib.ModData
 
         public string Path { get; set; }
 
-        public string Directory => System.IO.Path.GetDirectoryName(Path);
-        public string Filename => System.IO.Path.GetFileName(Path);
+        public string Directory => System.IO.Path.GetDirectoryName(this.Path);
+        public string Filename => System.IO.Path.GetFileName(this.Path);
 
-        protected static readonly Logger Log;
 
         internal virtual Encoding BoMEncoding { get; } = NoBomEncoding;
 
@@ -33,13 +31,13 @@ namespace PDXModLib.ModData
 
         protected ModFile(string path, Mod sourceMod)
         {
-            Path = path.Replace('/', System.IO.Path.DirectorySeparatorChar);
-            SourceMod = sourceMod;
+            this.Path = path.Replace('/', System.IO.Path.DirectorySeparatorChar);
+            this.SourceMod = sourceMod;
         }
 
         public abstract string RawContents { get; }
 
-        internal static ModFile Load(IModFileLoader loader, string path , Mod sourceMod)
+        internal static ModFile Load(IModFileLoader loader, string path, Mod sourceMod)
         {
             if (SCExtensions.Contains(System.IO.Path.GetExtension(path).ToLower()))
             {
@@ -66,14 +64,14 @@ namespace PDXModLib.ModData
 
         public virtual void Save(IModFileSaver saver)
         {
-            saver.Save(Path, RawContents, BoMEncoding);
+            saver.Save(this.Path, this.RawContents, this.BoMEncoding);
         }
 
-		public override string ToString()
-		{
-			return Filename;
-		}
-	}
+        public override string ToString()
+        {
+            return this.Filename;
+        }
+    }
 
     internal class SCModFile : ModFile
     {
@@ -85,20 +83,21 @@ namespace PDXModLib.ModData
         {
             get
             {
-                if (_rawContents == null)
+                if (this._rawContents == null)
                 {
-                    _rawContents = NormalizeLineEndings(LoadSCFileContents(_loader));
+                    this._rawContents = NormalizeLineEndings(this.LoadSCFileContents(this._loader));
                 }
-                return _rawContents;
+                return this._rawContents;
             }
         }
 
         internal bool ParseError { get; private set; }
+        internal string ParseErrorMessage { get; private set; }
 
         public SCModFile(IModFileLoader loader, string path, Mod sourceMod)
             : base(path, sourceMod)
         {
-            _loader = loader;
+            this._loader = loader;
         }
 
         private string LoadSCFileContents(IModFileLoader loader)
@@ -107,13 +106,14 @@ namespace PDXModLib.ModData
             {
                 using (var sr = new StreamReader(stream))
                 {
-					var contents = sr.ReadToEnd();
+                    var contents = sr.ReadToEnd();
 
-					var adapter = CWToolsAdapter.Parse(Path, contents);
+                    var adapter = CWToolsAdapter.Parse(this.Path, contents);
 
-                    ParseError = adapter.ParseError != null;
-                    Contents = adapter.Root;
-					return contents;
+                    this.ParseError = adapter.ParseError != null;
+                    this.ParseErrorMessage = adapter.ParseError;
+                    this.Contents = adapter.Root;
+                    return contents;
                 }
             }
         }
@@ -129,24 +129,24 @@ namespace PDXModLib.ModData
         {
             get
             {
-                if (_rawContents == null)
+                if (this._rawContents == null)
                 {
-                    using (var stream = _loader.OpenStream())
+                    using (var stream = this._loader.OpenStream())
                     {
                         using (var sr = new StreamReader(stream))
                         {
-                            _rawContents = NormalizeLineEndings(sr.ReadToEnd());
+                            this._rawContents = NormalizeLineEndings(sr.ReadToEnd());
                         }
                     }
                 }
-                return _rawContents;
+                return this._rawContents;
             }
         }
 
         public CodeModFile(IModFileLoader loader, string path, Mod sourceMod)
             : base(path, sourceMod)
         {
-            _loader = loader;
+            this._loader = loader;
         }
     }
 
@@ -162,24 +162,24 @@ namespace PDXModLib.ModData
         {
             get
             {
-                if (_rawContents == null)
+                if (this._rawContents == null)
                 {
-                    using (var stream = _loader.OpenStream())
+                    using (var stream = this._loader.OpenStream())
                     {
                         using (var sr = new StreamReader(stream))
                         {
-                            _rawContents = NormalizeLineEndings(sr.ReadToEnd());
+                            this._rawContents = NormalizeLineEndings(sr.ReadToEnd());
                         }
                     }
                 }
-                return _rawContents;
+                return this._rawContents;
             }
         }
 
         public LocalisationFile(IModFileLoader loader, string path, Mod sourceMod)
             : base(path, sourceMod)
         {
-            _loader = loader;
+            this._loader = loader;
         }
     }
 
@@ -187,17 +187,17 @@ namespace PDXModLib.ModData
     {
         private readonly IModFileLoader _loader;
         public string Contents => "BinaryModFile";
-        public override string RawContents => Contents;
+        public override string RawContents => this.Contents;
 
         public BinaryModFile(IModFileLoader loader, string path, Mod sourceMod)
             : base(path, sourceMod)
         {
-            _loader = loader;
+            this._loader = loader;
         }
 
         public override void Save(IModFileSaver saver)
         {
-            saver.Save(Path, _loader.OpenStream);
+            saver.Save(this.Path, this._loader.OpenStream);
         }
     }
 
@@ -208,50 +208,50 @@ namespace PDXModLib.ModData
 
         internal override Encoding BoMEncoding { get; }
 
-        public override string RawContents => GetContents();
+        public override string RawContents => this.GetContents();
 
-        public IReadOnlyList<ModFile> SourceFiles => _sourceFiles;
+        public IReadOnlyList<ModFile> SourceFiles => this._sourceFiles;
 
-        public int SourceFileCount => SourceFiles.Count;
+        public int SourceFileCount => this.SourceFiles.Count;
 
-        public bool Resolved => contents != null ? SourceFileCount == 0 : SourceFileCount == 1;
+        public bool Resolved => this.contents != null ? this.SourceFileCount == 0 : this.SourceFileCount == 1;
 
         public MergedModFile(string path, IEnumerable<ModFile> source, Mod sourceMod)
-            :base(path, sourceMod)
+            : base(path, sourceMod)
         {
-            _sourceFiles = source.ToList();
-            BoMEncoding = _sourceFiles[0].BoMEncoding;
+            this._sourceFiles = source.ToList();
+            this.BoMEncoding = this._sourceFiles[0].BoMEncoding;
         }
 
         public void SaveResult(string toSave)
         {
-            contents = toSave;
+            this.contents = toSave;
         }
 
         public void RemoveSourceFile(ModFile file)
         {
-            _sourceFiles.Remove(file);
+            this._sourceFiles.Remove(file);
         }
 
         public override void Save(IModFileSaver saver)
         {
-            if (Resolved)
+            if (this.Resolved)
                 base.Save(saver);
             else
             {
-                var extension = System.IO.Path.GetExtension(Path);
-                var newPath = System.IO.Path.ChangeExtension(Path, $"{extension}.mzip");
-                saver.Save(newPath, CreateMergeZip);
+                var extension = System.IO.Path.GetExtension(this.Path);
+                var newPath = System.IO.Path.ChangeExtension(this.Path, $"{extension}.mzip");
+                saver.Save(newPath, this.CreateMergeZip);
             }
         }
 
         private string GetContents()
         {
-            if (contents != null)
-                return contents;
+            if (this.contents != null)
+                return this.contents;
 
-            if (SourceFileCount == 1)
-                return SourceFiles[0].RawContents;
+            if (this.SourceFileCount == 1)
+                return this.SourceFiles[0].RawContents;
 
             return null;
         }
@@ -261,7 +261,7 @@ namespace PDXModLib.ModData
             var result = new MemoryStream();
             using (var saver = new MergeZipFileSaver(result))
             {
-                foreach (var sourceFile in SourceFiles)
+                foreach (var sourceFile in this.SourceFiles)
                 {
                     sourceFile.Save(saver);
                 }
@@ -273,34 +273,34 @@ namespace PDXModLib.ModData
         private class MergeZipFileSaver : IModFileSaver
         {
             private int _index;
-            private ZipFile _zipFile; 
+            private readonly ZipFile _zipFile;
 
             public MergeZipFileSaver(Stream outputStream)
             {
-				_zipFile = ZipFile.Create(outputStream);
-				_zipFile.BeginUpdate(new MemoryArchiveStorage());
-			}
+                this._zipFile = ZipFile.Create(outputStream);
+                this._zipFile.BeginUpdate(new MemoryArchiveStorage());
+            }
 
-			public void Save(string path, Func<Stream> getStream)
-			{
-				_zipFile.Add(new FunctorDataSource(getStream), GetPath(path));
-			}
+            public void Save(string path, Func<Stream> getStream)
+            {
+                this._zipFile.Add(new FunctorDataSource(getStream), this.GetPath(path));
+            }
 
-			public void Save(string path, string text, Encoding encoding)
-			{
-				_zipFile.Add(new FunctorDataSource(text, encoding), GetPath(path));
-			}
+            public void Save(string path, string text, Encoding encoding)
+            {
+                this._zipFile.Add(new FunctorDataSource(text, encoding), this.GetPath(path));
+            }
 
             public void Dispose()
             {
-				_zipFile.CommitUpdate();
-                _zipFile?.Close();
+                this._zipFile.CommitUpdate();
+                this._zipFile?.Close();
             }
 
             private string GetPath(string path)
             {
                 var filename = System.IO.Path.GetFileName(path);
-                var i = _index++;
+                var i = this._index++;
                 return $"{i:00}/{filename}";
             }
         }
