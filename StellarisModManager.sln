@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StellarisModManager.Blazor"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StellarisModManager.Core", "StellarisModManager.Core\StellarisModManager.Core.csproj", "{EEC8F786-3A4D-4077-BCC3-14A3B602A0A3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PDXModLib", "PDXModLib\PDXModLib.csproj", "{425A70E9-89B9-4129-8804-D059A82B468E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApp1", "ConsoleApp1\ConsoleApp1.csproj", "{A9B6B585-566F-48E7-8B12-65AB64643856}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,14 +51,14 @@ Global
 		{EEC8F786-3A4D-4077-BCC3-14A3B602A0A3}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EEC8F786-3A4D-4077-BCC3-14A3B602A0A3}.Release|x64.ActiveCfg = Release|Any CPU
 		{EEC8F786-3A4D-4077-BCC3-14A3B602A0A3}.Release|x64.Build.0 = Release|Any CPU
-		{425A70E9-89B9-4129-8804-D059A82B468E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{425A70E9-89B9-4129-8804-D059A82B468E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{425A70E9-89B9-4129-8804-D059A82B468E}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{425A70E9-89B9-4129-8804-D059A82B468E}.Debug|x64.Build.0 = Debug|Any CPU
-		{425A70E9-89B9-4129-8804-D059A82B468E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{425A70E9-89B9-4129-8804-D059A82B468E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{425A70E9-89B9-4129-8804-D059A82B468E}.Release|x64.ActiveCfg = Release|Any CPU
-		{425A70E9-89B9-4129-8804-D059A82B468E}.Release|x64.Build.0 = Release|Any CPU
+		{A9B6B585-566F-48E7-8B12-65AB64643856}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9B6B585-566F-48E7-8B12-65AB64643856}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9B6B585-566F-48E7-8B12-65AB64643856}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A9B6B585-566F-48E7-8B12-65AB64643856}.Debug|x64.Build.0 = Debug|Any CPU
+		{A9B6B585-566F-48E7-8B12-65AB64643856}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9B6B585-566F-48E7-8B12-65AB64643856}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9B6B585-566F-48E7-8B12-65AB64643856}.Release|x64.ActiveCfg = Release|Any CPU
+		{A9B6B585-566F-48E7-8B12-65AB64643856}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

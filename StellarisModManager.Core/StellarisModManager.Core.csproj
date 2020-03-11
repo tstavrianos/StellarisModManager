@@ -6,7 +6,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\PDXModLib\PDXModLib.csproj" />
       <ProjectReference Include="..\Stellaris.Data\Stellaris.Data.csproj" />
     </ItemGroup>
 

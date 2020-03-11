@@ -4,12 +4,11 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
-using PDXModLib.ModData;
 using Serilog;
 using Serilog.Core;
 using Serilog.Exceptions;
 using Stellaris.Data.Json;
-using Stellaris.Data.Parser;
+using Stellaris.Data;
 
 namespace StellarisModManager.Core
 {
@@ -23,7 +22,7 @@ namespace StellarisModManager.Core
         private readonly List<ModConflict> _conflicts;
         public IReadOnlyList<ModConflict> Conflicts => this._conflicts;
 
-        public ModManager(IParser parser = null)
+        public ModManager()
         {
             this._logger = new LoggerConfiguration()//
 #if DEBUG
@@ -39,9 +38,8 @@ namespace StellarisModManager.Core
             this._conflicts = new List<ModConflict>();
             this.Mods = new ObservableCollection<ModEntry>();
             this.BasePath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\\Paradox Interactive\\Stellaris";
-            //this.BasePath = @"C:\usefull\Newfolder\git\StellarisModManager\Stellaris";
+            this.BasePath = @"C:\usefull\Newfolder\git\StellarisModManager\Stellaris";
             this.ModPath = Path.Combine(this.BasePath, "mod");
-            if (parser == null) parser = new SimpleModParser();
             var mods = new List<Mod>();
             foreach (var file in Directory.EnumerateFiles(this.ModPath, "*.mod"))
             {
@@ -49,7 +47,7 @@ namespace StellarisModManager.Core
                 //var mod = new Mod(parsed);
                 //var mod = new Mod(file);
                 //mod.Validate(file);
-                var mod = Mod.Load(file);
+                var mod = new Mod(file);
                 mod.LoadFiles(this.BasePath);
                 mods.Add(mod);
             }
@@ -141,11 +139,11 @@ namespace StellarisModManager.Core
                     entry = new ModsRegistryEntry
                     {
                         Id = item.Guid.ToString(),
-                        Source = !string.IsNullOrWhiteSpace(item.ModData.Folder)
-                                 && (item.ModData.Folder.StartsWith(
+                        Source = !string.IsNullOrWhiteSpace(item.ModData.Path)
+                                 && (item.ModData.Path.StartsWith(
                                          this.BasePath,
                                          StringComparison.OrdinalIgnoreCase)
-                                     || item.ModData.Folder.StartsWith("mod/", StringComparison.OrdinalIgnoreCase))
+                                     || item.ModData.Path.StartsWith("mod/", StringComparison.OrdinalIgnoreCase))
                             ? SourceType.local
                             : SourceType.steam,
                         Status = item.ModData.Valid ? StatusType.ready_to_play : StatusType.invalid_mod,
@@ -155,12 +153,12 @@ namespace StellarisModManager.Core
                         RequiredVersion = item.ModData.SupportedVersion.ToString(),
                         Tags = new List<string>(item.ModData.Tags)
                     };
-                    if (!string.IsNullOrWhiteSpace(item.ModData.FileName))
+                    if (!string.IsNullOrWhiteSpace(item.ModData.Archive))
                     {
-                        entry.ArchivePath = item.ModData.FileName;
+                        entry.ArchivePath = item.ModData.Archive;
                     }
 
-                    if (!string.IsNullOrWhiteSpace(item.ModData.Folder)) entry.DirPath = item.ModData.Folder;
+                    if (!string.IsNullOrWhiteSpace(item.ModData.Path)) entry.DirPath = item.ModData.Path;
                 }
 
                 modsRegistry.Add(entry.Id, entry);

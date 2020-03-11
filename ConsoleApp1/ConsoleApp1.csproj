@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="LanguageExt.Parsec" Version="3.4.18-beta" />
+      <PackageReference Include="Serilog" Version="2.9.1-dev-01154" />
+      <PackageReference Include="Serilog.Sinks.Console" Version="4.0.0-dev-00839" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Stellaris.Data\Stellaris.Data.csproj" />
+    </ItemGroup>
+
+</Project>

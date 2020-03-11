@@ -40,6 +40,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace StellarisModManager.Core
 {
@@ -47,29 +48,29 @@ namespace StellarisModManager.Core
     {
         #region Arbitrarily-named in-between objects
 
-        public class CandidateThing
+        public sealed class CandidateThing
         {
-            public int file1index { get; set; }
-            public int file2index { get; set; }
-            public CandidateThing chain { get; set; }
+            public int File1Index { get; set; }
+            public int File2Index { get; set; }
+            public CandidateThing Chain { get; set; }
         }
 
-        public class commonOrDifferentThing
+        public sealed class CommonOrDifferentThing
         {
-            public List<string> common { get; set; }
-            public List<string> file1 { get; set; }
-            public List<string> file2 { get; set; }
+            public List<string> Common { get; set; }
+            public List<string> File1 { get; set; }
+            public List<string> File2 { get; set; }
         }
 
-        public class patchDescriptionThing
+        public sealed class PatchDescriptionThing
         {
-            internal patchDescriptionThing() { }
+            internal PatchDescriptionThing() { }
 
-            internal patchDescriptionThing(string[] file, int offset, int length)
+            internal PatchDescriptionThing(string[] file, int offset, int length)
             {
                 this.Offset = offset;
                 this.Length = length;
-                this.Chunk = new List<string>(file.SliceJS(offset, offset + length));
+                this.Chunk = new List<string>(file.SliceJs(offset, offset + length));
             }
 
             public int Offset { get; set; }
@@ -77,22 +78,22 @@ namespace StellarisModManager.Core
             public List<string> Chunk { get; set; }
         }
 
-        public class patchResult
+        public sealed class PatchResult
         {
-            public patchDescriptionThing file1 { get; set; }
-            public patchDescriptionThing file2 { get; set; }
+            public PatchDescriptionThing File1 { get; set; }
+            public PatchDescriptionThing File2 { get; set; }
         }
 
-        public class chunkReference
+        public sealed class ChunkReference
         {
-            public int offset { get; set; }
-            public int length { get; set; }
+            public int Offset { get; set; }
+            public int Length { get; set; }
         }
 
-        public class diffSet
+        public sealed class DiffSet
         {
-            public chunkReference file1 { get; set; }
-            public chunkReference file2 { get; set; }
+            public ChunkReference File1 { get; set; }
+            public ChunkReference File2 { get; set; }
         }
 
         public enum Side
@@ -103,40 +104,37 @@ namespace StellarisModManager.Core
             Right = 2
         }
 
-        public class diff3Set : IComparable<diff3Set>
+        public sealed class Diff3Set : IComparable<Diff3Set>
         {
-            public Side side { get; set; }
-            public int file1offset { get; set; }
-            public int file1length { get; set; }
-            public int file2offset { get; set; }
-            public int file2length { get; set; }
+            public Side Side { get; set; }
+            public int File1Offset { get; set; }
+            public int File1Length { get; set; }
+            public int File2Offset { get; set; }
+            public int File2Length { get; set; }
 
-            public int CompareTo(diff3Set other)
+            public int CompareTo(Diff3Set other)
             {
-                if (this.file1offset != other.file1offset)
-                    return this.file1offset.CompareTo(other.file1offset);
-                else
-                    return this.side.CompareTo(other.side);
+                return this.File1Offset != other.File1Offset ? this.File1Offset.CompareTo(other.File1Offset) : this.Side.CompareTo(other.Side);
             }
         }
 
-        public class patch3Set
+        public sealed class Patch3Set
         {
-            public Side side { get; set; }
-            public int offset { get; set; }
-            public int length { get; set; }
-            public int conflictOldOffset { get; set; }
-            public int conflictOldLength { get; set; }
-            public int conflictRightOffset { get; set; }
-            public int conflictRightLength { get; set; }
+            public Side Side { get; set; }
+            public int Offset { get; set; }
+            public int Length { get; set; }
+            public int ConflictOldOffset { get; set; }
+            public int ConflictOldLength { get; set; }
+            public int ConflictRightOffset { get; set; }
+            public int ConflictRightLength { get; set; }
         }
 
-        private class conflictRegion
+        private sealed class ConflictRegion
         {
-            public int file1RegionStart { get; set; }
-            public int file1RegionEnd { get; set; }
-            public int file2RegionStart { get; set; }
-            public int file2RegionEnd { get; set; }
+            public int File1RegionStart { get; set; }
+            public int File1RegionEnd { get; set; }
+            public int File2RegionStart { get; set; }
+            public int File2RegionEnd { get; set; }
         }
 
         #endregion
@@ -148,12 +146,12 @@ namespace StellarisModManager.Core
             // amusingly, I can't figure out anything they have in common.
         }
 
-        private class MergeOKResultBlock : IMergeResultBlock
+        private sealed class MergeOkResultBlock : IMergeResultBlock
         {
             public string[] ContentLines { get; set; }
         }
 
-        private class MergeConflictResultBlock : IMergeResultBlock
+        private sealed class MergeConflictResultBlock : IMergeResultBlock
         {
             public string[] LeftLines { get; set; }
             public int LeftIndex { get; set; }
@@ -167,7 +165,7 @@ namespace StellarisModManager.Core
 
         #region Methods
 
-        public static CandidateThing longest_common_subsequence(string[] file1, string[] file2)
+        public static CandidateThing LongestCommonSubsequence(string[] file1, string[] file2)
         {
             /* Text diff algorithm following Hunt and McIlroy 1976.
              * J. W. Hunt and M. D. McIlroy, An algorithm for differential file
@@ -179,7 +177,7 @@ namespace StellarisModManager.Core
             var equivalenceClasses = new Dictionary<string, List<int>>();
             var candidates = new Dictionary<int, CandidateThing>
                                  {
-                                     { 0, new CandidateThing { file1index = -1, file2index = -1, chain = null } }
+                                     { 0, new CandidateThing { File1Index = -1, File2Index = -1, Chain = null } }
                                  };
 
 
@@ -195,29 +193,28 @@ namespace StellarisModManager.Core
             for (var i = 0; i < file1.Length; i++)
             {
                 var line = file1[i];
-                List<int> file2indices;
-                file2indices = equivalenceClasses.ContainsKey(line) ? equivalenceClasses[line] : new List<int>();
+                var file2Indices = equivalenceClasses.ContainsKey(line) ? equivalenceClasses[line] : new List<int>();
 
                 var r = 0;
-                var s = 0;
                 var c = candidates[0];
 
-                foreach (var j in file2indices)
+                foreach (var j in file2Indices)
                 {
+                    int s;
                     for (s = r; s < candidates.Count; s++)
                     {
-                        if ((candidates[s].file2index < j) &&
-                            ((s == candidates.Count - 1) ||
-                             (candidates[s + 1].file2index > j)))
+                        if (candidates[s].File2Index < j &&
+                            (s == candidates.Count - 1 ||
+                             candidates[s + 1].File2Index > j))
                             break;
                     }
 
                     if (s >= candidates.Count) continue;
                     var newCandidate = new CandidateThing
                     {
-                        file1index = i,
-                        file2index = j,
-                        chain = candidates[s]
+                        File1Index = i,
+                        File2Index = j,
+                        Chain = candidates[s]
                     };
                     candidates[r] = c;
                     r = s + 1;
@@ -238,142 +235,120 @@ namespace StellarisModManager.Core
             return candidates[candidates.Count - 1];
         }
 
-        private static void processCommon(ref commonOrDifferentThing common, List<commonOrDifferentThing> result)
+        private static void ProcessCommon(ref CommonOrDifferentThing common, ICollection<CommonOrDifferentThing> result)
         {
-            if (common.common.Count > 0)
-            {
-                common.common.Reverse();
-                result.Add(common);
-                common = new commonOrDifferentThing();
-            }
+            if (common.Common.Count <= 0) return;
+            common.Common.Reverse();
+            result.Add(common);
+            common = new CommonOrDifferentThing();
         }
 
-        public static List<commonOrDifferentThing> diff_comm(string[] file1, string[] file2)
+        public static List<CommonOrDifferentThing> DiffComm(string[] file1, string[] file2)
         {
             // We apply the LCS to build a "comm"-style picture of the
             // differences between file1 and file2.
 
-            var result = new List<commonOrDifferentThing>();
+            var result = new List<CommonOrDifferentThing>();
 
             var tail1 = file1.Length;
             var tail2 = file2.Length;
 
-            var common = new commonOrDifferentThing
+            var common = new CommonOrDifferentThing
             {
-                common = new List<string>()
+                Common = new List<string>()
             };
 
-            for (var candidate = longest_common_subsequence(file1, file2);
+            for (var candidate = LongestCommonSubsequence(file1, file2);
                  candidate != null;
-                 candidate = candidate.chain)
+                 candidate = candidate.Chain)
             {
-                var different = new commonOrDifferentThing
+                var different = new CommonOrDifferentThing
                 {
-                    file1 = new List<string>(),
-                    file2 = new List<string>()
+                    File1 = new List<string>(),
+                    File2 = new List<string>()
                 };
 
-                while (--tail1 > candidate.file1index)
-                    different.file1.Add(file1[tail1]);
+                while (--tail1 > candidate.File1Index)
+                    different.File1.Add(file1[tail1]);
 
-                while (--tail2 > candidate.file2index)
-                    different.file2.Add(file2[tail2]);
+                while (--tail2 > candidate.File2Index)
+                    different.File2.Add(file2[tail2]);
 
-                if (different.file1.Count > 0 || different.file2.Count > 0)
+                if (different.File1.Count > 0 || different.File2.Count > 0)
                 {
-                    processCommon(ref common, result);
-                    different.file1.Reverse();
-                    different.file2.Reverse();
+                    ProcessCommon(ref common, result);
+                    different.File1.Reverse();
+                    different.File2.Reverse();
                     result.Add(different);
                 }
 
                 if (tail1 >= 0)
-                    common.common.Add(file1[tail1]);
+                    common.Common.Add(file1[tail1]);
             }
 
-            processCommon(ref common, result);
+            ProcessCommon(ref common, result);
 
             result.Reverse();
             return result;
         }
 
-        public static List<patchResult> diff_patch(string[] file1, string[] file2)
+        public static IEnumerable<PatchResult> DiffPatch(string[] file1, string[] file2)
         {
             // We apply the LCD to build a JSON representation of a
             // diff(1)-style patch.
 
-            var result = new List<patchResult>();
+            var result = new List<PatchResult>();
             var tail1 = file1.Length;
             var tail2 = file2.Length;
 
-            for (var candidate = longest_common_subsequence(file1, file2);
+            for (var candidate = LongestCommonSubsequence(file1, file2);
                  candidate != null;
-                 candidate = candidate.chain)
+                 candidate = candidate.Chain)
             {
-                var mismatchLength1 = tail1 - candidate.file1index - 1;
-                var mismatchLength2 = tail2 - candidate.file2index - 1;
-                tail1 = candidate.file1index;
-                tail2 = candidate.file2index;
+                var mismatchLength1 = tail1 - candidate.File1Index - 1;
+                var mismatchLength2 = tail2 - candidate.File2Index - 1;
+                tail1 = candidate.File1Index;
+                tail2 = candidate.File2Index;
 
-                if (mismatchLength1 > 0 || mismatchLength2 > 0)
+                if (mismatchLength1 <= 0 && mismatchLength2 <= 0) continue;
+                var thisResult = new PatchResult
                 {
-                    var thisResult = new patchResult
-                    {
-                        file1 = new patchDescriptionThing(file1,
-                                                 candidate.file1index + 1,
-                                                 mismatchLength1),
-                        file2 = new patchDescriptionThing(file2,
-                                                 candidate.file2index + 1,
-                                                 mismatchLength2)
-                    };
-                    result.Add(thisResult);
-                }
+                    File1 = new PatchDescriptionThing(file1,
+                        candidate.File1Index + 1,
+                        mismatchLength1),
+                    File2 = new PatchDescriptionThing(file2,
+                        candidate.File2Index + 1,
+                        mismatchLength2)
+                };
+                result.Add(thisResult);
             }
 
             result.Reverse();
             return result;
         }
 
-        public static List<patchResult> strip_patch(List<patchResult> patch)
+        public static List<PatchResult> StripPatch(IEnumerable<PatchResult> patch)
         {
             // Takes the output of Diff.diff_patch(), and removes
             // information from it. It can still be used by patch(),
             // below, but can no longer be inverted.
-            var newpatch = new List<patchResult>();
-            for (var i = 0; i < patch.Count; i++)
-            {
-                var chunk = patch[i];
-                newpatch.Add(new patchResult
-                {
-                    file1 = new patchDescriptionThing
-                    {
-                        Offset = chunk.file1.Offset,
-                        Length = chunk.file1.Length
-                    },
-                    file2 = new patchDescriptionThing
-                    {
-                        Chunk = chunk.file1.Chunk
-                    }
-                });
-            }
-            return newpatch;
+            return patch.Select(chunk => new PatchResult {File1 = new PatchDescriptionThing {Offset = chunk.File1.Offset, Length = chunk.File1.Length}, File2 = new PatchDescriptionThing {Chunk = chunk.File1.Chunk}}).ToList();
         }
 
-        public static void invert_patch(List<patchResult> patch)
+        public static void InvertPatch(IEnumerable<PatchResult> patch)
         {
             // Takes the output of Diff.diff_patch(), and inverts the
             // sense of it, so that it can be applied to file2 to give
             // file1 rather than the other way around.
-            for (var i = 0; i < patch.Count; i++)
+            foreach (var chunk in patch)
             {
-                var chunk = patch[i];
-                var tmp = chunk.file1;
-                chunk.file1 = chunk.file2;
-                chunk.file2 = tmp;
+                var tmp = chunk.File1;
+                chunk.File1 = chunk.File2;
+                chunk.File2 = tmp;
             }
         }
 
-        private static void copyCommon(int targetOffset, ref int commonOffset, string[] file, List<string> result)
+        private static void CopyCommon(int targetOffset, ref int commonOffset, IReadOnlyList<string> file, ICollection<string> result)
         {
             while (commonOffset < targetOffset)
             {
@@ -382,7 +357,7 @@ namespace StellarisModManager.Core
             }
         }
 
-        public static List<string> patch(string[] file, List<patchResult> patch)
+        public static List<string> Patch(string[] file, IEnumerable<PatchResult> patch)
         {
             // Applies a patch to a file.
             //
@@ -391,22 +366,20 @@ namespace StellarisModManager.Core
             var result = new List<string>();
             var commonOffset = 0;
 
-            for (var chunkIndex = 0; chunkIndex < patch.Count; chunkIndex++)
+            foreach (var chunk in patch)
             {
-                var chunk = patch[chunkIndex];
-                copyCommon(chunk.file1.Offset, ref commonOffset, file, result);
+                CopyCommon(chunk.File1.Offset, ref commonOffset, file, result);
 
-                for (var lineIndex = 0; lineIndex < chunk.file2.Chunk.Count; lineIndex++)
-                    result.Add(chunk.file2.Chunk[lineIndex]);
+                result.AddRange(chunk.File2.Chunk);
 
-                commonOffset += chunk.file1.Length;
+                commonOffset += chunk.File1.Length;
             }
 
-            copyCommon(file.Length, ref commonOffset, file, result);
+            CopyCommon(file.Length, ref commonOffset, file, result);
             return result;
         }
 
-        public static List<string> diff_merge_keepall(string[] file1, string[] file2)
+        public static List<string> DiffMergeKeepAll(string[] file1, string[] file2)
         {
             // Non-destructively merges two files.
             //
@@ -422,59 +395,55 @@ namespace StellarisModManager.Core
 
             var result = new List<string>();
             var file1CompletedToOffset = 0;
-            var diffPatches = diff_patch(file1, file2);
+            var diffPatches = DiffPatch(file1, file2);
 
-            for (var chunkIndex = 0; chunkIndex < diffPatches.Count; chunkIndex++)
+            foreach (var chunk in diffPatches.Where(chunk => chunk.File2.Length > 0))
             {
-                var chunk = diffPatches[chunkIndex];
-                if (chunk.file2.Length > 0)
-                {
-                    //copy any not-yet-copied portion of file1 to the end of this patch entry
-                    result.AddRange(file1.SliceJS(file1CompletedToOffset, chunk.file1.Offset + chunk.file1.Length));
-                    file1CompletedToOffset = chunk.file1.Offset + chunk.file1.Length;
+                //copy any not-yet-copied portion of file1 to the end of this patch entry
+                result.AddRange(file1.SliceJs(file1CompletedToOffset, chunk.File1.Offset + chunk.File1.Length));
+                file1CompletedToOffset = chunk.File1.Offset + chunk.File1.Length;
 
-                    //copy the file2 portion of this patch entry
-                    result.AddRange(chunk.file2.Chunk);
-                }
+                //copy the file2 portion of this patch entry
+                result.AddRange(chunk.File2.Chunk);
             }
             //copy any not-yet-copied portion of file1 to the end of the file
-            result.AddRange(file1.SliceJS(file1CompletedToOffset, file1.Length));
+            result.AddRange(file1.SliceJs(file1CompletedToOffset, file1.Length));
 
             return result;
         }
 
-        public static List<diffSet> diff_indices(string[] file1, string[] file2)
+        public static IEnumerable<DiffSet> DiffIndices(string[] file1, string[] file2)
         {
             // We apply the LCS to give a simple representation of the
             // offsets and lengths of mismatched chunks in the input
             // files. This is used by diff3_merge_indices below.
 
-            var result = new List<diffSet>();
+            var result = new List<DiffSet>();
             var tail1 = file1.Length;
             var tail2 = file2.Length;
 
-            for (var candidate = longest_common_subsequence(file1, file2);
+            for (var candidate = LongestCommonSubsequence(file1, file2);
                  candidate != null;
-                 candidate = candidate.chain)
+                 candidate = candidate.Chain)
             {
-                var mismatchLength1 = tail1 - candidate.file1index - 1;
-                var mismatchLength2 = tail2 - candidate.file2index - 1;
-                tail1 = candidate.file1index;
-                tail2 = candidate.file2index;
+                var mismatchLength1 = tail1 - candidate.File1Index - 1;
+                var mismatchLength2 = tail2 - candidate.File2Index - 1;
+                tail1 = candidate.File1Index;
+                tail2 = candidate.File2Index;
 
                 if (mismatchLength1 > 0 || mismatchLength2 > 0)
                 {
-                    result.Add(new diffSet
+                    result.Add(new DiffSet
                     {
-                        file1 = new chunkReference
+                        File1 = new ChunkReference
                         {
-                            offset = tail1 + 1,
-                            length = mismatchLength1
+                            Offset = tail1 + 1,
+                            Length = mismatchLength1
                         },
-                        file2 = new chunkReference
+                        File2 = new ChunkReference
                         {
-                            offset = tail2 + 1,
-                            length = mismatchLength2
+                            Offset = tail2 + 1,
+                            Length = mismatchLength2
                         }
                     });
                 }
@@ -484,32 +453,32 @@ namespace StellarisModManager.Core
             return result;
         }
 
-        private static void addHunk(diffSet h, Side side, List<diff3Set> hunks)
+        private static void AddHunk(DiffSet h, Side side, ICollection<Diff3Set> hunks)
         {
-            hunks.Add(new diff3Set
+            hunks.Add(new Diff3Set
             {
-                side = side,
-                file1offset = h.file1.offset,
-                file1length = h.file1.length,
-                file2offset = h.file2.offset,
-                file2length = h.file2.length
+                Side = side,
+                File1Offset = h.File1.Offset,
+                File1Length = h.File1.Length,
+                File2Offset = h.File2.Offset,
+                File2Length = h.File2.Length
             });
         }
 
-        private static void copyCommon2(int targetOffset, ref int commonOffset, List<patch3Set> result)
+        private static void CopyCommon2(int targetOffset, ref int commonOffset, ICollection<Patch3Set> result)
         {
             if (targetOffset > commonOffset)
             {
-                result.Add(new patch3Set
+                result.Add(new Patch3Set
                 {
-                    side = Side.Old,
-                    offset = commonOffset,
-                    length = targetOffset - commonOffset
+                    Side = Side.Old,
+                    Offset = commonOffset,
+                    Length = targetOffset - commonOffset
                 });
             }
         }
 
-        public static List<patch3Set> diff3_merge_indices(string[] a, string[] o, string[] b)
+        public static IEnumerable<Patch3Set> Diff3MergeIndices(string[] a, string[] o, string[] b)
         {
             // Given three files, A, O, and B, where both A and B are
             // independently derived from O, returns a fairly complicated
@@ -523,49 +492,55 @@ namespace StellarisModManager.Core
             //
             // (http://www.cis.upenn.edu/~bcpierce/papers/diff3-short.pdf)
 
-            var m1 = diff_indices(o, a);
-            var m2 = diff_indices(o, b);
+            var m1 = DiffIndices(o, a);
+            var m2 = DiffIndices(o, b);
 
-            var hunks = new List<diff3Set>();
+            var hunks = new List<Diff3Set>();
 
-            for (var i = 0; i < m1.Count; i++) { addHunk(m1[i], Side.Left, hunks); }
-            for (var i = 0; i < m2.Count; i++) { addHunk(m2[i], Side.Right, hunks); }
+            foreach (var t in m1)
+            {
+                AddHunk(t, Side.Left, hunks);
+            }
+            foreach (var t in m2)
+            {
+                AddHunk(t, Side.Right, hunks);
+            }
             hunks.Sort();
 
-            var result = new List<patch3Set>();
+            var result = new List<Patch3Set>();
             var commonOffset = 0;
 
             for (var hunkIndex = 0; hunkIndex < hunks.Count; hunkIndex++)
             {
                 var firstHunkIndex = hunkIndex;
                 var hunk = hunks[hunkIndex];
-                var regionLhs = hunk.file1offset;
-                var regionRhs = regionLhs + hunk.file1length;
+                var regionLhs = hunk.File1Offset;
+                var regionRhs = regionLhs + hunk.File1Length;
 
                 while (hunkIndex < hunks.Count - 1)
                 {
                     var maybeOverlapping = hunks[hunkIndex + 1];
-                    var maybeLhs = maybeOverlapping.file1offset;
+                    var maybeLhs = maybeOverlapping.File1Offset;
                     if (maybeLhs > regionRhs)
                         break;
 
-                    regionRhs = Math.Max(regionRhs, maybeLhs + maybeOverlapping.file1length);
+                    regionRhs = Math.Max(regionRhs, maybeLhs + maybeOverlapping.File1Length);
                     hunkIndex++;
                 }
 
-                copyCommon2(regionLhs, ref commonOffset, result);
+                CopyCommon2(regionLhs, ref commonOffset, result);
                 if (firstHunkIndex == hunkIndex)
                 {
                     // The "overlap" was only one hunk long, meaning that
                     // there's no conflict here. Either a and o were the
                     // same, or b and o were the same.
-                    if (hunk.file2length > 0)
+                    if (hunk.File2Length > 0)
                     {
-                        result.Add(new patch3Set
+                        result.Add(new Patch3Set
                         {
-                            side = hunk.side,
-                            offset = hunk.file2offset,
-                            length = hunk.file2length
+                            Side = hunk.Side,
+                            Offset = hunk.File2Offset,
+                            Length = hunk.File2Length
                         });
                     }
                 }
@@ -578,26 +553,26 @@ namespace StellarisModManager.Core
                     // in the regions of o that each side changed, and
                     // report appropriate spans for the three sides.
 
-                    var regions = new Dictionary<Side, conflictRegion>
+                    var regions = new Dictionary<Side, ConflictRegion>
                         {
                             {
                                 Side.Left,
-                                new conflictRegion
+                                new ConflictRegion
                                     {
-                                        file1RegionStart = a.Length,
-                                        file1RegionEnd = -1,
-                                        file2RegionStart = o.Length,
-                                        file2RegionEnd = -1
+                                        File1RegionStart = a.Length,
+                                        File1RegionEnd = -1,
+                                        File2RegionStart = o.Length,
+                                        File2RegionEnd = -1
                                     }
                             },
                             {
                                 Side.Right,
-                                new conflictRegion
+                                new ConflictRegion
                                     {
-                                        file1RegionStart = b.Length,
-                                        file1RegionEnd = -1,
-                                        file2RegionStart = o.Length,
-                                        file2RegionEnd = -1
+                                        File1RegionStart = b.Length,
+                                        File1RegionEnd = -1,
+                                        File2RegionStart = o.Length,
+                                        File2RegionEnd = -1
                                     }
                             }
                         };
@@ -605,61 +580,60 @@ namespace StellarisModManager.Core
                     for (var i = firstHunkIndex; i <= hunkIndex; i++)
                     {
                         hunk = hunks[i];
-                        var side = hunk.side;
+                        var side = hunk.Side;
                         var r = regions[side];
-                        var oLhs = hunk.file1offset;
-                        var oRhs = oLhs + hunk.file1length;
-                        var abLhs = hunk.file2offset;
-                        var abRhs = abLhs + hunk.file2length;
-                        r.file1RegionStart = Math.Min(abLhs, r.file1RegionStart);
-                        r.file1RegionEnd = Math.Max(abRhs, r.file1RegionEnd);
-                        r.file2RegionStart = Math.Min(oLhs, r.file2RegionStart);
-                        r.file2RegionEnd = Math.Max(oRhs, r.file2RegionEnd);
+                        var oLhs = hunk.File1Offset;
+                        var oRhs = oLhs + hunk.File1Length;
+                        var abLhs = hunk.File2Offset;
+                        var abRhs = abLhs + hunk.File2Length;
+                        r.File1RegionStart = Math.Min(abLhs, r.File1RegionStart);
+                        r.File1RegionEnd = Math.Max(abRhs, r.File1RegionEnd);
+                        r.File2RegionStart = Math.Min(oLhs, r.File2RegionStart);
+                        r.File2RegionEnd = Math.Max(oRhs, r.File2RegionEnd);
                     }
-                    var aLhs = regions[Side.Left].file1RegionStart + (regionLhs - regions[Side.Left].file2RegionStart);
-                    var aRhs = regions[Side.Left].file1RegionEnd + (regionRhs - regions[Side.Left].file2RegionEnd);
-                    var bLhs = regions[Side.Right].file1RegionStart + (regionLhs - regions[Side.Right].file2RegionStart);
-                    var bRhs = regions[Side.Right].file1RegionEnd + (regionRhs - regions[Side.Right].file2RegionEnd);
+                    var aLhs = regions[Side.Left].File1RegionStart + (regionLhs - regions[Side.Left].File2RegionStart);
+                    var aRhs = regions[Side.Left].File1RegionEnd + (regionRhs - regions[Side.Left].File2RegionEnd);
+                    var bLhs = regions[Side.Right].File1RegionStart + (regionLhs - regions[Side.Right].File2RegionStart);
+                    var bRhs = regions[Side.Right].File1RegionEnd + (regionRhs - regions[Side.Right].File2RegionEnd);
 
-                    result.Add(new patch3Set
+                    result.Add(new Patch3Set
                     {
-                        side = Side.Conflict,
-                        offset = aLhs,
-                        length = aRhs - aLhs,
-                        conflictOldOffset = regionLhs,
-                        conflictOldLength = regionRhs - regionLhs,
-                        conflictRightOffset = bLhs,
-                        conflictRightLength = bRhs - bLhs
+                        Side = Side.Conflict,
+                        Offset = aLhs,
+                        Length = aRhs - aLhs,
+                        ConflictOldOffset = regionLhs,
+                        ConflictOldLength = regionRhs - regionLhs,
+                        ConflictRightOffset = bLhs,
+                        ConflictRightLength = bRhs - bLhs
                     });
                 }
 
                 commonOffset = regionRhs;
             }
 
-            copyCommon2(o.Length, ref commonOffset, result);
+            CopyCommon2(o.Length, ref commonOffset, result);
             return result;
         }
 
-        private static void flushOk(List<string> okLines, List<IMergeResultBlock> result)
+        private static void FlushOk(List<string> okLines, ICollection<IMergeResultBlock> result)
         {
             if (okLines.Count > 0)
             {
-                var okResult = new MergeOKResultBlock();
-                okResult.ContentLines = okLines.ToArray();
+                var okResult = new MergeOkResultBlock {ContentLines = okLines.ToArray()};
                 result.Add(okResult);
             }
             okLines.Clear();
         }
 
-        private static bool isTrueConflict(patch3Set rec, string[] a, string[] b)
+        private static bool IsTrueConflict(Patch3Set rec, IReadOnlyList<string> a, IReadOnlyList<string> b)
         {
-            if (rec.length != rec.conflictRightLength)
+            if (rec.Length != rec.ConflictRightLength)
                 return true;
 
-            var aoff = rec.offset;
-            var boff = rec.conflictRightOffset;
+            var aoff = rec.Offset;
+            var boff = rec.ConflictRightOffset;
 
-            for (var j = 0; j < rec.length; j++)
+            for (var j = 0; j < rec.Length; j++)
             {
                 if (a[j + aoff] != b[j + boff])
                     return true;
@@ -667,7 +641,7 @@ namespace StellarisModManager.Core
             return false;
         }
 
-        public static List<IMergeResultBlock> diff3_merge(string[] a, string[] o, string[] b, bool excludeFalseConflicts)
+        public static List<IMergeResultBlock> Diff3Merge(string[] a, string[] o, string[] b, bool excludeFalseConflicts)
         {
             // Applies the output of Diff.diff3_merge_indices to actually
             // construct the merged file; the returned result alternates
@@ -680,41 +654,40 @@ namespace StellarisModManager.Core
                     {Side.Old, o},
                     {Side.Right, b}
                 };
-            var indices = diff3_merge_indices(a, o, b);
+            var indices = Diff3MergeIndices(a, o, b);
 
             var okLines = new List<string>();
 
-            for (var i = 0; i < indices.Count; i++)
+            foreach (var x in indices)
             {
-                var x = indices[i];
-                var side = x.side;
+                var side = x.Side;
                 if (side == Side.Conflict)
                 {
-                    if (excludeFalseConflicts && !isTrueConflict(x, a, b))
+                    if (excludeFalseConflicts && !IsTrueConflict(x, a, b))
                     {
-                        okLines.AddRange(files[0].SliceJS(x.offset, x.offset + x.length));
+                        okLines.AddRange(files[0].SliceJs(x.Offset, x.Offset + x.Length));
                     }
                     else
                     {
-                        flushOk(okLines, result);
+                        FlushOk(okLines, result);
                         result.Add(new MergeConflictResultBlock
                         {
-                            LeftLines = a.SliceJS(x.offset, x.offset + x.length),
-                            LeftIndex = x.offset,
-                            OldLines = o.SliceJS(x.conflictOldOffset, x.conflictOldOffset + x.conflictOldLength),
-                            OldIndex = x.conflictOldOffset,
-                            RightLines = b.SliceJS(x.conflictRightOffset, x.conflictRightOffset + x.conflictRightLength),
-                            RightIndex = x.offset
+                            LeftLines = a.SliceJs(x.Offset, x.Offset + x.Length),
+                            LeftIndex = x.Offset,
+                            OldLines = o.SliceJs(x.ConflictOldOffset, x.ConflictOldOffset + x.ConflictOldLength),
+                            OldIndex = x.ConflictOldOffset,
+                            RightLines = b.SliceJs(x.ConflictRightOffset, x.ConflictRightOffset + x.ConflictRightLength),
+                            RightIndex = x.Offset
                         });
                     }
                 }
                 else
                 {
-                    okLines.AddRange(files[side].SliceJS(x.offset, x.offset + x.length));
+                    okLines.AddRange(files[side].SliceJs(x.Offset, x.Offset + x.Length));
                 }
             }
 
-            flushOk(okLines, result);
+            FlushOk(okLines, result);
             return result;
         }
 
@@ -725,7 +698,7 @@ namespace StellarisModManager.Core
 
     public static class ArrayExtension
     {
-        public static T[] SliceJS<T>(this T[] array, int startingIndex, int followingIndex)
+        public static T[] SliceJs<T>(this T[] array, int startingIndex, int followingIndex)
         {
             if (followingIndex > array.Length)
                 followingIndex = array.Length;

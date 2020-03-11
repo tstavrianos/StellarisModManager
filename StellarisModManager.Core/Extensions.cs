@@ -1,12 +1,10 @@
 ﻿using System.Collections.ObjectModel;
+using System;
+using Stellaris.Data;
+using Stellaris.Data.Json;
 
 namespace StellarisModManager.Core
 {
-    using System;
-
-    using PDXModLib.ModData;
-
-    using Stellaris.Data.Json;
 
     internal static class Extensions
     {
