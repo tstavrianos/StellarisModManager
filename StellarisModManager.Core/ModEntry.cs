@@ -7,11 +7,23 @@ using Stellaris.Data;
 
 namespace StellarisModManager.Core
 {
-    public sealed class ModEntry: INotifyPropertyChanged
+    public sealed class ModEntry : INotifyPropertyChanged
     {
         private static int _entries;
 
         private bool _isEnabled;
+
+        private bool _loaded;
+
+        public bool Loaded
+        {
+            get => this._loaded;
+            set
+            {
+                this._loaded = value;
+                this.RaisePropertyChanged();
+            }
+        }
 
         public bool IsEnabled
         {
@@ -35,23 +47,23 @@ namespace StellarisModManager.Core
             }
         }
 
-        public Guid Guid { get; }
+        public Guid Guid { get; internal set; }
 
         public Mod ModData { get; }
 
-        public ModsRegistryEntry RegistryData { get; }
+        public ModsRegistryEntry RegistryData { get; internal set; }
 
         public int OriginalSpot { get; }
-        
+
         public string Name => this.ModData.Name;
-        
+
         public IList<string> Issues { get; }
 
         public string IssuesHtml => string.Join('\n', this.Issues);
-        
+
         public bool Overwrites { get; set; }
         public bool IsOverwritten { get; set; }
-        
+
         public ModEntry(Mod mod, string guid, ModsRegistryEntry entry)
         {
             this.OriginalSpot = _entries++;
@@ -60,14 +72,14 @@ namespace StellarisModManager.Core
             this.ModData = mod;
             this.Issues = new List<string>();
         }
-        
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         private void RaisePropertyChanged([CallerMemberName] string propertyName = null)
         {
             this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-        
+
         public override string ToString()
         {
             return this.ModData.Name;

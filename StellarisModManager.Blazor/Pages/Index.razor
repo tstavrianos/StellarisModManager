@@ -16,7 +16,7 @@
         <div class="row">&nbsp;</div>
         <div class="row">
             <div class="btn-group-vertical container-fluid text-nowrap" role="group" aria-label="Second group">
-              <button type="button" class="btn btn-light text-left" @onclick="@(Alpha)"><i class="mdi mdi-sort-alphabetical-ascending" aria-hidden="true"></i>&nbsp;Alphabetical</button>
+                <button type="button" class="btn btn-light text-left" @onclick="@(Alpha)"><i class="mdi mdi-sort-alphabetical-ascending" aria-hidden="true"></i>&nbsp;Alphabetical</button>
                 <button type="button" class="btn btn-light text-left" @onclick="@(Reverse)"><i class="mdi mdi-sort-descending" aria-hidden="true"></i>&nbsp;Reverse</button>
                 <button type="button" class="btn btn-light text-left" @onclick="@(TopologicalSort)"><i class="mdi mdi-sort-bool-ascending" aria-hidden="true"></i>&nbsp;Topological Sort</button>
                 <button type="button" class="btn btn-light text-left disabled"><i class="mdi mdi-auto-fix" aria-hidden="true"></i>&nbsp;Load Order Fixer</button>
@@ -33,54 +33,61 @@
         <div class="row">&nbsp;</div>
         <div class="row">
             <div class="btn-group-vertical container-fluid text-nowrap" role="group" aria-label="fourth group">
-              <button type="button" class="btn btn-light text-left" @onclick="@(Save)"><i class="mdi mdi-content-save-outline" aria-hidden="true"></i>&nbsp;Save</button>
+                <button type="button" class="btn btn-light text-left" @onclick="@(Save)"><i class="mdi mdi-content-save-outline" aria-hidden="true"></i>&nbsp;Save</button>
             </div>
         </div>
     </div>
     <div class="col-9">
         <table ondragover="event.preventDefault();" class="table table-sm">
-            @foreach (var item in _manager.Mods)
-            {
-                if (item != null)
-                {
-                    <tr draggable="true" @key="@item.Guid" tabindex="1" class="@(item.IsSelected?"table-active":"") @(item.ModData.Valid?"":"table-danger")" @onmousedown="@((e) => ItemSelected(e, item))"
-                        @ondrop="@(()=> Drop(item))" @ondrag="@(()=> StartDrag(item))"><td>
-                            @if (item.IsEnabled)
-                            {
-                                <span @onclick="@(() => ItemClick(item))"><i class="mdi mdi-check-box-outline" aria-hidden="true"></i></span>
-                            }
-                            else
-                            {
-                                <span @onclick="@(() => ItemClick(item))"><i class="mdi mdi-checkbox-blank-outline" aria-hidden="true"></i></span>
-                            }
-                            <span>@item.Name
-                                @if (item.Overwrites && !item.IsOverwritten)
-                                {
-                                    <span class="badge badge-success"><i class="mdi mdi-plus" aria-hidden="true"></i></span>
-                                }
-                                else if (item.Overwrites && item.IsOverwritten)
-                                {
-                                    <span class="badge badge-warning"><i class="mdi mdi-plus-minus" aria-hidden="true"></i></span>
-                                }
-                                else if (!item.Overwrites && item.IsOverwritten)
-                                {
-                                    <span class="badge badge-danger"><i class="mdi mdi-minus" aria-hidden="true"></i></span>
-                                }
-                                @if (item.ModData.Tags != null)
-                                {
-                                    @foreach (var tag in item.ModData.Tags)
+            <SpinLoader IsLoading="@(_manager == null)">
+                <ContentTemplate>
+                    @foreach (var item in _manager.Mods)
+                    {
+                        if (item != null)
+                        {
+                            <tr draggable="true" @key="@item.Guid" tabindex="1" class="@(item.IsSelected ? "table-active" : "") @(item.ModData.Valid ? "" : "table-danger")" @onmousedown="@((e) => ItemSelected(e, item))"
+                                @ondrop="@(() => Drop(item))" @ondrag="@(() => StartDrag(item))">
+                                <td>
+                                    @if (item.IsEnabled)
                                     {
-                                        <span class="badge badge-info">@tag</span>
+                                        <span @onclick="@(() => ItemClick(item))"><i class="mdi mdi-check-box-outline" aria-hidden="true"></i></span>
                                     }
-                                }
-                                @if (item.Issues.Count > 0)
-                                {
-                                    <span class="badge badge-warning" data-toggle="tooltip" title="@item.IssuesHtml">@item.Issues.Count</span>
-                                }
-                            </span></td>
-                    </tr>
-                }
-            }
+                                    else
+                                    {
+                                        <span @onclick="@(() => ItemClick(item))"><i class="mdi mdi-checkbox-blank-outline" aria-hidden="true"></i></span>
+                                    }
+                                    <span>
+                                        @item.Name @(item.Loaded ? "" : "(Loading)")
+                                        @if (item.Overwrites && !item.IsOverwritten)
+                                        {
+                                            <span class="badge badge-success"><i class="mdi mdi-plus" aria-hidden="true"></i></span>
+                                        }
+                                        else if (item.Overwrites && item.IsOverwritten)
+                                        {
+                                            <span class="badge badge-warning"><i class="mdi mdi-plus-minus" aria-hidden="true"></i></span>
+                                        }
+                                        else if (!item.Overwrites && item.IsOverwritten)
+                                        {
+                                            <span class="badge badge-danger"><i class="mdi mdi-minus" aria-hidden="true"></i></span>
+                                        }
+                                        @if (item.ModData.Tags != null)
+                                        {
+                                            @foreach (var tag in item.ModData.Tags)
+                                            {
+                                                <span class="badge badge-info">@tag</span>
+                                            }
+                                        }
+                                        @if (item.Issues.Count > 0)
+                                        {
+                                            <span class="badge badge-warning" data-toggle="tooltip" title="@item.IssuesHtml">@item.Issues.Count</span>
+                                        }
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </ContentTemplate>
+            </SpinLoader>
         </table>
     </div>
 </div>
@@ -94,7 +101,7 @@
         _manager.TopologicalSort();
         StateHasChanged();
     }
-    
+
     void StartDrag(ModEntry item)
     {
         _currentIndex = GetIndex(item);
@@ -211,5 +218,15 @@
         StateHasChanged();
     }
 
-    readonly ModManager _manager = new ModManager();
+    ModManager _manager = new ModManager();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Task.Run(_manager.Load);
+            StateHasChanged();
+        }
+    }
+
 }

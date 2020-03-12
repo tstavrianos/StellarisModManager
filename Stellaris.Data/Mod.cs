@@ -1,18 +1,24 @@
 using System;
 using System.Collections.Generic;
-using System.IO.Compression;
 using System.Linq;
 using Antlr4.Runtime;
 using Serilog;
 using Serilog.Core;
 using Serilog.Exceptions;
-using Stellaris.Data.Antlr;
-using Stellaris.Data.Parser;
+
+using Ionic.Zip;
+using Path2 = System.IO.Path;
 
 namespace Stellaris.Data
 {
+    using System.IO;
+
+    using Stellaris.Data.ParadoxParsers.Types;
+    using Stellaris.Data.ParadoxParsers.Visitors;
+
     public sealed class Mod
     {
+        private static readonly string[] allowed_extensions = { ".gfx", ".gui", ".txt", ".asset" };
         private static readonly Logger Log;
 
         static Mod()
@@ -27,26 +33,26 @@ namespace Stellaris.Data
 #endif
         }
 
-        private MapEntry _mapEntry;
-        
+        private Config _config;
+
         public string Id { get; }
 
         public string Key => $"mod/{this.Id}";
-        
+
         public string Name { get; }
-        
+
         public List<ModFile> Files { get; } = new List<ModFile>();
 
         public List<string> Tags { get; } = new List<string>();
         public List<string> Dependencies { get; } = new List<string>();
-        
+
         public string Archive { get; private set; }
 
         public string Path { get; private set; }
 
         public string Picture { get; }
         public bool Valid { get; private set; }
-        
+
         public string RemoteFileId { get; }
         public SupportedVersion SupportedVersion { get; }
         public string Version { get; }
@@ -55,7 +61,7 @@ namespace Stellaris.Data
 
         private static string Strip(string value)
         {
-            if(string.IsNullOrWhiteSpace(value)) return string.Empty;
+            if (string.IsNullOrWhiteSpace(value)) return string.Empty;
             if (value.Length <= 2) return value;
             if (value[0] == '"' && value[value.Length - 1] == '"')
                 return value.Substring(1, value.Length - 2);
@@ -64,16 +70,16 @@ namespace Stellaris.Data
 
         public Mod(string file)
         {
-            this.Id = System.IO.Path.GetFileName(file);
+            this.Id = Path2.GetFileName(file);
             this.Valid = true;
-            
-            var text = System.IO.File.ReadAllText(file);
+
+            var text = File.ReadAllText(file);
             try
             {
                 var lexer = new ParadoxLexer(new AntlrInputStream(text));
                 var commonTokenStream = new CommonTokenStream(lexer);
                 var parser = new ParadoxParser(commonTokenStream);
-                this._mapEntry = parser.config().ToConfigBlock();
+                this._config = parser.config().Accept(new ConfigVisitor());
             }
             catch (Exception ex)
             {
@@ -84,69 +90,41 @@ namespace Stellaris.Data
             if (!this.Valid) return;
             this.Tags = new List<string>();
             this.Dependencies = new List<string>();
-            foreach (var (key, members) in this._mapEntry)
+            foreach (var a in this._config)
             {
+                var key = (a.Field as StringField)?.Value;
+                var value = a.Value;
                 switch (key)
                 {
-                    case "name":
-                        if (members.Count > 0)
-                        {
-                            if (members.First() is StringEntry s) this.Name = s.Value;
-                        }
+                    case "name" when value is StringValue s:
+                        this.Name = s.Value;
                         break;
-                    case "archive":
-                        if (members.Count > 0)
-                        {
-                            if (members.First() is StringEntry s) this.Archive = s.Value;
-                        }
+                    case "archive" when value is StringValue s:
+                        this.Archive = s.Value;
                         break;
-                    case "path":
-                        if (members.Count > 0)
-                        {
-                            if (members.First() is StringEntry s) this.Path = s.Value;
-                        }
+                    case "path" when value is StringValue s:
+                        this.Path = s.Value;
                         break;
-                    case "picture":
-                        if (members.Count > 0)
-                        {
-                            if (members.First() is StringEntry s) this.Picture = s.Value;
-                        }
+                    case "picture" when value is StringValue s:
+                        this.Picture = s.Value;
                         break;
-                    case "remote_file_id":
-                        if (members.Count > 0)
-                        {
-                            if (members.First() is StringEntry s) this.RemoteFileId = s.Value;
-                        }
+                    case "remote_file_id" when value is StringValue s:
+                        this.RemoteFileId = s.Value;
                         break;
-                    case "supported_version":
-                        if (members.Count > 0)
-                        {
-                            if (members.First() is StringEntry s) this.SupportedVersion = new SupportedVersion(s.Value);
-                        }
+                    case "supported_version" when value is StringValue s:
+                        this.SupportedVersion = new SupportedVersion(s.Value);
                         break;
-                    case "version":
-                        if (members.Count > 0)
-                        {
-                            if (members.First() is StringEntry s) this.Version = s.Value;
-                        }
+                    case "version" when value is StringValue s:
+                        this.Version = s.Value;
                         break;
-                    case "replace_path":
-                        if (members.Count > 0)
-                        {
-                            if (members.First() is StringEntry s) this._replacePath = s.Value;
-                        }
+                    case "replace_path" when value is StringValue s:
+                        this._replacePath = s.Value;
                         break;
-                    case "tags":
-                        foreach (var entry in members)
-                        {
-                            if(entry is StringEntry s) this.Tags.Add(s.Value);
-                        }
+                    case "tags" when value is StringValue s:
+                        this.Tags.Add(s.Value);
                         break;
-                    case "dependencies":
-                        foreach (var entry in members)
-                        {
-                            if(entry is StringEntry s) this.Dependencies.Add(s.Value);
-                        }
+                    case "dependencies" when value is StringValue s:
+                        this.Dependencies.Add(s.Value);
                         break;
                 }
 
@@ -169,80 +147,90 @@ namespace Stellaris.Data
 
         public void LoadFiles(string basePath)
         {
-            var mPath = System.IO.Path.Combine(basePath, this.Archive ?? this.Path);
+            var mPath = Path2.Combine(basePath, this.Archive ?? this.Path);
 
-            if (System.IO.Path.GetExtension(mPath) == ".zip" && !System.IO.File.Exists(mPath))
+            if (Path2.GetExtension(mPath) == ".zip" && !File.Exists(mPath))
             {
-                if (System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(mPath))
-                    && System.IO.File.Exists(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(mPath), "descriptor.mod")))
+                if (Directory.Exists(Path2.GetDirectoryName(mPath))
+                    && File.Exists(Path2.Combine(Path2.GetDirectoryName(mPath), "descriptor.mod")))
                 {
-                    mPath = System.IO.Path.GetDirectoryName(mPath);
+                    mPath = Path2.GetDirectoryName(mPath);
                     this.Archive = null;
                     this.Path = mPath;
                 }
             }
 
-            if (System.IO.Path.GetExtension(mPath) == ".zip" && !System.IO.File.Exists(mPath))
+            if (Path2.GetExtension(mPath) == ".zip" && !File.Exists(mPath))
             {
                 this.Valid = false;
                 Log?.Debug($"{this.Id} - Archive does not exist");
             }
-            else if (System.IO.Path.GetExtension(mPath) != ".zip" && !System.IO.Directory.Exists(mPath))
+            else if (Path2.GetExtension(mPath) != ".zip" && !Directory.Exists(mPath))
             {
                 this.Valid = false;
                 Log?.Debug($"{this.Id} - Path does not exist");
             }
-            
+
             if (!this.Valid) return;
 
-            if (System.IO.Path.GetExtension(mPath) == ".zip")
+            if (Path2.GetExtension(mPath) == ".zip")
             {
-                var zipInfo = new System.IO.FileInfo(mPath);
+                var zipInfo = new FileInfo(mPath);
                 var workshopNumber = zipInfo.Directory.Name;
-                
-                var tempFolder = System.IO.Path.Combine(basePath, "extracted_mods");
-                if (!System.IO.Directory.Exists(tempFolder))
-                    System.IO.Directory.CreateDirectory(tempFolder);
-                tempFolder = System.IO.Path.Combine(tempFolder, workshopNumber);
-                if (!System.IO.Directory.Exists(tempFolder))
-                {
-                    System.IO.Directory.CreateDirectory(tempFolder);
-                    if (!tempFolder.EndsWith(System.IO.Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
-                        tempFolder += System.IO.Path.DirectorySeparatorChar;
 
-                    using (var archive = ZipFile.OpenRead(mPath))
+                var tempFolder = Path2.Combine(basePath, "extracted_mods");
+                if (!Directory.Exists(tempFolder))
+                    Directory.CreateDirectory(tempFolder);
+                tempFolder = Path2.Combine(tempFolder, workshopNumber);
+                if (!Directory.Exists(tempFolder))
+                {
+                    Directory.CreateDirectory(tempFolder);
+                    if (!tempFolder.EndsWith(Path2.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
+                        tempFolder += Path2.DirectorySeparatorChar;
+
+                    ZipFile.Read(zipInfo.FullName).ExtractAll(tempFolder, ExtractExistingFileAction.OverwriteSilently);
+
+                    /*using (var archive = ZipFile.OpenRead(mPath))
                     {
                         foreach (var entry in archive.Entries)
                         {
                             // Gets the full path to ensure that relative segments are removed.
                             var destinationPath =
-                                System.IO.Path.GetFullPath(System.IO.Path.Combine(tempFolder, entry.FullName));
+                                Path2.GetFullPath(Path2.Combine(tempFolder, entry.FullName));
 
+                            if (!System.IO.Directory.Exists(Path2.GetDirectoryName(destinationPath)))
+                            {
+                                Directory.CreateDirectory(Path2.GetDirectoryName(destinationPath));
+                            }
                             // Ordinal match is safest, case-sensitive volumes can be mounted within volumes that
                             // are case-insensitive.
                             if (destinationPath.StartsWith(tempFolder, StringComparison.Ordinal))
                                 entry.ExtractToFile(destinationPath);
                         }
-                    }
+                    }*/
                 }
                 else
                 {
-                    if (!tempFolder.EndsWith(System.IO.Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
-                        tempFolder += System.IO.Path.DirectorySeparatorChar;
+                    if (!tempFolder.EndsWith(Path2.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
+                        tempFolder += Path2.DirectorySeparatorChar;
                 }
 
                 mPath = tempFolder;
             }
             else
             {
-                mPath += System.IO.Path.DirectorySeparatorChar;
+                mPath += Path2.DirectorySeparatorChar;
             }
 
-            var paths = System.IO.Directory.EnumerateFiles(mPath, "*.*", System.IO.SearchOption.AllDirectories);
-            foreach (var modFile in from path in paths where string.Compare(System.IO.Path.GetFileName(path), "descriptor.mod",
-                StringComparison.OrdinalIgnoreCase) != 0 let refPath = Uri.UnescapeDataString(new Uri(mPath).MakeRelativeUri(new Uri(path)).OriginalString) select new ModFile(refPath, this, path))
+            var paths = Directory.EnumerateFiles(mPath, "*.*", SearchOption.AllDirectories);
+
+            foreach (var path in Directory.EnumerateFiles(mPath, "*.*", SearchOption.AllDirectories))
             {
-                this.Files.Add(modFile);
+                if (path.Equals(Path2.Combine(mPath, Path2.GetFileName(path)), StringComparison.OrdinalIgnoreCase)) continue;
+                if (!allowed_extensions.Contains(System.IO.Path.GetExtension(path).ToLower())) continue;
+
+                var refPath = Uri.UnescapeDataString(new Uri(mPath).MakeRelativeUri(new Uri(path)).OriginalString);
+                this.Files.Add(new ModFile(refPath, this, path));
             }
 
             var scFiles = this.Files.Where(x => !x.Valid).ToArray();

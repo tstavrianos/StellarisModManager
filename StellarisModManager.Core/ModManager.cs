@@ -12,6 +12,8 @@ using Stellaris.Data;
 
 namespace StellarisModManager.Core
 {
+    using System.Threading.Tasks;
+
     public sealed class ModManager : IDisposable
     {
         private readonly Logger _logger;
@@ -21,6 +23,8 @@ namespace StellarisModManager.Core
         public string ModPath { get; }
         private readonly List<ModConflict> _conflicts;
         public IReadOnlyList<ModConflict> Conflicts => this._conflicts;
+
+        public bool Loaded { get; private set; } = false;
 
         public ModManager()
         {
@@ -38,19 +42,19 @@ namespace StellarisModManager.Core
             this._conflicts = new List<ModConflict>();
             this.Mods = new ObservableCollection<ModEntry>();
             this.BasePath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\\Paradox Interactive\\Stellaris";
-            this.BasePath = @"C:\usefull\Newfolder\git\StellarisModManager\Stellaris";
+            if (!Directory.Exists(this.BasePath))
+                this.BasePath = @"C:\usefull\Newfolder\git\StellarisModManager\Stellaris";
             this.ModPath = Path.Combine(this.BasePath, "mod");
+
             var mods = new List<Mod>();
+            var tasks = new List<Task>();
             foreach (var file in Directory.EnumerateFiles(this.ModPath, "*.mod"))
             {
-                //var parsed = parser.Parse(file);
-                //var mod = new Mod(parsed);
-                //var mod = new Mod(file);
-                //mod.Validate(file);
                 var mod = new Mod(file);
-                mod.LoadFiles(this.BasePath);
-                mods.Add(mod);
+                this.Mods.Add(new ModEntry(mod, null, null));
             }
+            mods.AddRange(this.Mods.Select(x => x.ModData));
+            this.Mods.Clear();
 
             var gameData = LoadJson(Path.Combine(this.BasePath, "game_data.json"), x => { }, () => new GameData { ModsOrder = new List<string>() });
             var dlcLoad = LoadJson(Path.Combine(this.BasePath, "dlc_load.json"), x => { }, () => new DlcLoad { DisabledDlcs = new List<string>(), EnabledMods = new List<string>() });
@@ -74,6 +78,19 @@ namespace StellarisModManager.Core
                 it.IsEnabled = dlcLoad.EnabledMods.Any(x => x.Equals(it.ModData.Key, StringComparison.OrdinalIgnoreCase));
                 this.Mods.Add(it);
             }
+        }
+
+        public void Load()
+        {
+            if (this.Loaded) return;
+            this.Loaded = true;
+
+            Parallel.ForEach(this.Mods,
+                (entry, state) =>
+                    {
+                        if (!entry.Loaded) entry.ModData.LoadFiles(this.BasePath);
+                        entry.Loaded = true;
+                    });
 
             this.Validate();
             this.CalculateConficts();
