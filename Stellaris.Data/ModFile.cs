@@ -1,15 +1,13 @@
 using System;
-using System.IO;
-using Antlr4.Runtime;
 using Serilog;
 using Serilog.Core;
 using Serilog.Exceptions;
+using Stellaris.Data.Parsers;
+using Stellaris.Data.Parsers.Models;
+using Stellaris.Data.Parsers.Tokenizer;
 
 namespace Stellaris.Data
 {
-    using Stellaris.Data.ParadoxParsers.Types;
-    using Stellaris.Data.ParadoxParsers.Visitors;
-
     public sealed class ModFile
     {
         private static readonly Logger Log;
@@ -27,7 +25,7 @@ namespace Stellaris.Data
         }
 
         private readonly Config _config;
-        public bool Valid { get; private set; }
+        public bool Valid { get; }
         public Mod SourceMod { get; }
 
         public string Path { get; }
@@ -44,10 +42,10 @@ namespace Stellaris.Data
             var text = System.IO.File.ReadAllText(filename);
             try
             {
-                var lexer = new ParadoxLexer(new AntlrInputStream(text));
-                var commonTokenStream = new CommonTokenStream(lexer);
-                var parser = new ParadoxParser(commonTokenStream);
-                this._config = parser.config().Accept(new ConfigVisitor());
+                var lexer = new SimpleRegexTokenizer();
+                var tokens = lexer.Tokenize(text);
+                var parser = new Parser();
+                this._config = parser.Parse(tokens);
             }
             catch (Exception ex)
             {

@@ -4,16 +4,11 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <RootNamespace>Stellaris.Data</RootNamespace>
     <PublishTrimmed>true</PublishTrimmed>
-      <Antlr4ToolPath>$(SolutionDir)\antlr4\antlr-4.8-complete.jar</Antlr4ToolPath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <Antlr4 Include="Grammar\Paradox.g4" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.8.0" />
-    <PackageReference Include="Antlr4BuildTasks" Version="2.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="Serilog" Version="2.9.1-dev-01154" />
     <PackageReference Include="Serilog.Exceptions" Version="5.4.0" />

@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using Serilog;
 
 namespace Stellaris.Data
 {
@@ -18,11 +20,18 @@ namespace Stellaris.Data
             this.Minor = int.MaxValue;
             this.Patch = int.MaxValue;
 
-            this.Major = ver[0] == "*" ? int.MaxValue : int.Parse(ver[0]);
-            if (ver.Length <= 1) return;
-            this.Minor = ver[1] == "*" ? int.MaxValue : int.Parse(ver[1]);
-            if (ver.Length > 2)
-                this.Patch = ver[2] == "*" ? int.MaxValue : int.Parse(ver[2]);
+            try
+            {
+                this.Major = ver[0] == "*" ? int.MaxValue : int.Parse(ver[0]);
+                if (ver.Length <= 1) return;
+                this.Minor = ver[1] == "*" ? int.MaxValue : int.Parse(ver[1]);
+                if (ver.Length > 2)
+                    this.Patch = ver[2] == "*" ? int.MaxValue : int.Parse(ver[2]);
+            }
+            catch (Exception e)
+            {
+                Mod.Log.Error(e, source);
+            }
         }
 
         public SupportedVersion(int maj, int min, int pat)

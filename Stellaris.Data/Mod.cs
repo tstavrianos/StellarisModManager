@@ -1,25 +1,25 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Antlr4.Runtime;
 using Serilog;
 using Serilog.Core;
 using Serilog.Exceptions;
-
+using System.IO;
 using Ionic.Zip;
+using Stellaris.Data.Parsers;
 using Path2 = System.IO.Path;
+using Stellaris.Data.Parsers.Models;
+using Stellaris.Data.Parsers.Tokenizer;
+using Array = Stellaris.Data.Parsers.Models.Array;
+using String = Stellaris.Data.Parsers.Models.String;
 
 namespace Stellaris.Data
 {
-    using System.IO;
-
-    using Stellaris.Data.ParadoxParsers.Types;
-    using Stellaris.Data.ParadoxParsers.Visitors;
 
     public sealed class Mod
     {
-        private static readonly string[] allowed_extensions = { ".gfx", ".gui", ".txt", ".asset" };
-        private static readonly Logger Log;
+        private static readonly string[] AllowedExtensions = { ".gfx", ".gui", ".txt", ".asset" };
+        internal static readonly Logger Log;
 
         static Mod()
         {
@@ -33,7 +33,7 @@ namespace Stellaris.Data
 #endif
         }
 
-        private Config _config;
+        private readonly Config _config;
 
         public string Id { get; }
 
@@ -76,10 +76,10 @@ namespace Stellaris.Data
             var text = File.ReadAllText(file);
             try
             {
-                var lexer = new ParadoxLexer(new AntlrInputStream(text));
-                var commonTokenStream = new CommonTokenStream(lexer);
-                var parser = new ParadoxParser(commonTokenStream);
-                this._config = parser.config().Accept(new ConfigVisitor());
+                var lexer = new SimpleRegexTokenizer();
+                var tokens = lexer.Tokenize(text);
+                var parser = new Parser();
+                this._config = parser.Parse(tokens);
             }
             catch (Exception ex)
             {
@@ -92,39 +92,48 @@ namespace Stellaris.Data
             this.Dependencies = new List<string>();
             foreach (var a in this._config)
             {
-                var key = (a.Field as StringField)?.Value;
+                var key = (a.Field as String)?.Value;
                 var value = a.Value;
                 switch (key)
                 {
-                    case "name" when value is StringValue s:
+                    case "name" when value is String s:
                         this.Name = s.Value;
                         break;
-                    case "archive" when value is StringValue s:
+                    case "archive" when value is String s:
                         this.Archive = s.Value;
                         break;
-                    case "path" when value is StringValue s:
+                    case "path" when value is String s:
                         this.Path = s.Value;
                         break;
-                    case "picture" when value is StringValue s:
+                    case "picture" when value is String s:
                         this.Picture = s.Value;
                         break;
-                    case "remote_file_id" when value is StringValue s:
+                    case "remote_file_id" when value is String s:
                         this.RemoteFileId = s.Value;
                         break;
-                    case "supported_version" when value is StringValue s:
+                    case "supported_version" when value is String s:
                         this.SupportedVersion = new SupportedVersion(s.Value);
                         break;
-                    case "version" when value is StringValue s:
+                    case "version" when value is String s:
                         this.Version = s.Value;
                         break;
-                    case "replace_path" when value is StringValue s:
+                    case "replace_path" when value is String s:
                         this._replacePath = s.Value;
                         break;
-                    case "tags" when value is StringValue s:
-                        this.Tags.Add(s.Value);
+                    case "tags" when value is Array s:
+                        foreach (var entry in s)
+                        {
+                            if(entry is String s1) this.Tags.Add(s1.Value);
+                        }
                         break;
-                    case "dependencies" when value is StringValue s:
-                        this.Dependencies.Add(s.Value);
+                    case "dependencies" when value is Array s:
+                        foreach (var entry in s)
+                        {
+                            if(entry is String s1) this.Dependencies.Add(s1.Value);
+                        }
+                        break;
+                    default:
+                        Log.Debug($"{a}, {key}");
                         break;
                 }
 
@@ -227,7 +236,7 @@ namespace Stellaris.Data
             foreach (var path in Directory.EnumerateFiles(mPath, "*.*", SearchOption.AllDirectories))
             {
                 if (path.Equals(Path2.Combine(mPath, Path2.GetFileName(path)), StringComparison.OrdinalIgnoreCase)) continue;
-                if (!allowed_extensions.Contains(System.IO.Path.GetExtension(path).ToLower())) continue;
+                if (!AllowedExtensions.Contains(System.IO.Path.GetExtension(path).ToLower())) continue;
 
                 var refPath = Uri.UnescapeDataString(new Uri(mPath).MakeRelativeUri(new Uri(path)).OriginalString);
                 this.Files.Add(new ModFile(refPath, this, path));
