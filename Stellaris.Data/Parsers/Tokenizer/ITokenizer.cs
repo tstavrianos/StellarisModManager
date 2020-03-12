@@ -6,6 +6,6 @@ namespace Stellaris.Data.Parsers.Tokenizer
 {
     public interface ITokenizer
     {
-        IEnumerable<Token> Tokenize(string queryDsl);
+        IReadOnlyList<Token> Tokenize(string queryDsl);
     }
 }

@@ -21,8 +21,9 @@ namespace Stellaris.Data.Parsers
         private Token _lookaheadSecond;
         private Config _config;
 
-        public Config Parse(IEnumerable<Token> tokens)
+        public Config Parse(IReadOnlyList<Token> tokens)
         {
+            if (tokens.Count == 0 || tokens[0].TokenType == TokenType.SequenceTerminator) return null;
             this.LoadSequenceStack(tokens);
             this.PrepareLookaheads();
 
@@ -46,31 +47,40 @@ namespace Stellaris.Data.Parsers
 
         private Assignment Assignment()
         {
-            IField field;
-            if (this._lookaheadFirst.TokenType == TokenType.String)
+            if (this._lookaheadSecond.TokenType == TokenType.Specifier)
             {
-                var token = this.ReadToken(TokenType.String);
-                field = new String (token.Value.Value);
+                IField field;
+                if (this._lookaheadFirst.TokenType == TokenType.String)
+                {
+                    var token = this.ReadToken(TokenType.String);
+                    field = new String (token.Value.Value);
+                }
+                else
+                {
+                    var token = this.ReadToken(TokenType.Integer);
+                    field = new Integer (long.Parse(token.Value.Value));
+                }
+
+                var op = this.ReadToken(TokenType.Specifier);
+                Operator actualOperator;
+                switch (op.Value.Value)
+                {
+                    case "=": actualOperator = Operator.Equal; break;
+                    case "<>": actualOperator = Operator.NotEqual; break;
+                    case ">": actualOperator = Operator.Greater; break;
+                    case "<": actualOperator = Operator.Less; break;
+                    case ">=": actualOperator = Operator.GreaterEqual; break;
+                    case "<=": actualOperator = Operator.LessEqual; break;
+                    default: throw new ParserException("");
+                }
+                var value = this.Value();
+                return new Assignment (field, actualOperator, value);
             }
             else
             {
-                var token = this.ReadToken(TokenType.Integer);
-                field = new Integer (long.Parse(token.Value.Value));
+                var value = this.Value();
+                return new Assignment (null, Operator.None, value);
             }
-            var op = this.ReadToken(TokenType.Specifier);
-            Operator actualOperator;
-            switch (op.Value.Value)
-            {
-                case "=": actualOperator = Operator.Equal; break;
-                case "<>": actualOperator = Operator.NotEqual; break;
-                case ">": actualOperator = Operator.Greater; break;
-                case "<": actualOperator = Operator.Less; break;
-                case ">=": actualOperator = Operator.GreaterEqual; break;
-                case "<=": actualOperator = Operator.LessEqual; break;
-                default: throw new ParserException("");
-            }
-            var value = this.Value();
-            return new Assignment (field, actualOperator, value);
         }
 
         private IValue Value()
@@ -112,12 +122,12 @@ namespace Stellaris.Data.Parsers
             }
         }
         
-        private void LoadSequenceStack(IEnumerable<Token> tokens)
+        private void LoadSequenceStack(IReadOnlyList<Token> tokens)
         {
             this._tokenSequence = new Stack<Token>();
-            foreach (var token in tokens.Reverse())
+            for(var i = tokens.Count - 1; i >= 0; i--)
             {
-                this._tokenSequence.Push(token);
+                this._tokenSequence.Push(tokens[i]);
             }
         }
 
@@ -159,6 +169,5 @@ namespace Stellaris.Data.Parsers
 
             this.DiscardToken();
         }
-
     }
 }

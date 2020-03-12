@@ -76,7 +76,7 @@ namespace Stellaris.Data
             var text = File.ReadAllText(file);
             try
             {
-                var lexer = new SimpleRegexTokenizer();
+                var lexer = new Tokenizer();
                 var tokens = lexer.Tokenize(text);
                 var parser = new Parser();
                 this._config = parser.Parse(tokens);

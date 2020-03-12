@@ -1,71 +1,85 @@
-using System;
 using System.Collections.Generic;
 
 namespace Stellaris.Data.Parsers.Tokenizer
 {
     public class Tokenizer : ITokenizer
     {
-        private string source;
-        private int start = 0;
-        private int current = 0;
-        private int line = 1;
-        private readonly List<Token> tokens = new List<Token>();
+        private StringSegment _source;
+        private int _start;
+        private int _current;
+        private int _line;
+        private int _column;
+        private readonly List<Token> _tokens = new List<Token>();
 
-        public IEnumerable<Token> Tokenize(string queryDsl)
+        public IReadOnlyList<Token> Tokenize(string queryDsl)
         {
-            this.source = queryDsl;
-            this.start = 0;
-            this.current = 0;
-            this.line = 1;
+            this._source = queryDsl;
+            this._start = 0;
+            this._current = 0;
+            this._line = 1;
+            this._column = 1;
+            this._tokens.Clear();
 
-            while (!IsAtEnd())
+            while (!this.IsAtEnd())
             {
-                // We are at the beginning of the next lexeme.
-                start = current;
-                ScanToken();
+                this._start = this._current;
+                this.ScanToken();
             }
 
-            tokens.Add(new Token(TokenType.SequenceTerminator, ""));
+            this._tokens.Add(new Token(TokenType.SequenceTerminator, ""));
 
-            return this.tokens;
+            return this._tokens;
         }
 
         private void ScanToken()
         {
-            char c = Advance();
+            var c = this.Advance();
 
             switch (c)
             {
-                case '{': AddToken(TokenType.LeftBracket); break;
-                case '}': AddToken(TokenType.RightBracket); break;
-                case '=': AddToken(TokenType.Specifier); break;
-                case '<':
-                    if (!Match('=')) Match('>');
-                    AddToken(TokenType.Specifier); break;
-                case '>':
-                    Match('=');
-                    AddToken(TokenType.Specifier); break;
-                case '\n':
-                    line++;
+                case '#':
+                    while (this.Peek() != '\n' && !this.IsAtEnd()) this.Advance();
                     break;
-                case '\t':
-                case ' ':
-                case '\r':
-                case '\f':
-                case '\v':
+                case '{':
+                    this.AddToken(TokenType.LeftBracket); break;
+                case '}':
+                    this.AddToken(TokenType.RightBracket); break;
+                case '=':
+                    this.AddToken(TokenType.Specifier); break;
+                case '<':
+                    if (!this.Match('=')) this.Match('>');
+                    this.AddToken(TokenType.Specifier); break;
+                case '>':
+                    this.Match('=');
+                    this.AddToken(TokenType.Specifier); break;
+                case '\n':
+                    this._line++;
+                    this._column = 1;
                     break;
                 default:
-                    if (AllowIntegerStart(c))
+                    if (char.IsWhiteSpace(c))
                     {
-                        Number(c == '-');
+                        while (char.IsWhiteSpace(this.Peek())) this.Advance();
+                    }
+                    else if (c == '@' && this.Peek() == '\\' && this.PeekNext() == '[')
+                    {
+                        while (this.Peek() != ']' && !this.IsAtEnd()) this.Advance();
+                        if(this.IsAtEnd()) 
+                            throw new ParserException($"Line: {this._line}, Unterminated metaprogramming token");
+                        this.Advance();
+                        this.AddToken(TokenType.String);
+                    }
+                    else if (AllowIntegerStart(c))
+                    {
+                        this.Number(c == '-');
                     }
                     else if (AllowedStringStart(c))
                     {
-                        String(c == '"');
+                        this.String(c == '"');
                     }
                     else
                     {
-                        //error
+                        throw new ParserException($"{this._line}:{this._column} Unexpected token: {c}, {(int)c}");
                     }
                     break;
             }
@@ -73,24 +87,24 @@ namespace Stellaris.Data.Parsers.Tokenizer
 
         private void Number(bool force)
         {
-            while (IsDigit(Peek())) Advance();
+            while (char.IsDigit(this.Peek())) this.Advance();
             
-            if (Peek() == '.' && IsDigit(PeekNext()))
+            if (this.Peek() == '.' && char.IsDigit(this.PeekNext()))
             {
                 this.Advance();
-                while (IsDigit(Peek())) Advance();
-                AddToken(TokenType.Real);
+                while (char.IsDigit(this.Peek())) this.Advance();
+                this.AddToken(TokenType.Real);
             }
             else if (AllowedUnquotedString(this.Peek()))
             {
-                String(false);
+                this.String(false);
             } else if (this.Peek() == '%')
             {
-                AddToken(TokenType.Percent);
+                this.AddToken(TokenType.Percent);
             }
             else
             {
-                AddToken(TokenType.Integer);
+                this.AddToken(TokenType.Integer);
             }
         }
 
@@ -109,18 +123,18 @@ namespace Stellaris.Data.Parsers.Tokenizer
                     if (this.Peek() == '"') break;
                     if (this.Peek() == '\n')
                     {
-                        //error
+                        throw new ParserException($"{this._line}:{this._column} Line ending in string");
                     }
 
                     this.Advance();
                 }
                 if (this.Peek() != '"')
                 {
-                    //error
+                    throw new ParserException($"{this._line}:{this._column} No closing quote for string");
                 }
 
                 // The closing ".
-                Advance();
+                this.Advance();
             }
             else
             {
@@ -129,85 +143,64 @@ namespace Stellaris.Data.Parsers.Tokenizer
                     this.Advance();
                 }
             }
-            AddToken(TokenType.String);
+
+            this.AddToken(TokenType.String);
         }
 
         private static bool AllowIntegerStart(char c)
         {
-            return c == '-' || IsDigit(c);
+            return c == '-' || char.IsDigit(c) || c == '+';
         }
         
         private static bool AllowedStringStart(char c)
         {
-            return IsDigit(c) || IsAlpha(c) || c == '"';
+            return char.IsDigit(c) || char.IsLetter(c) || c == '"' || c == '@' || c == '$' || c == '?';
         }
 
         private static bool AllowedUnquotedString(char c)
         {
-            return AllowedStringStart(c) || c == ':' || c == '@' || c == '.' || c == '%' || c =='-';
+            return AllowedStringStart(c) || c == ':' || c == '@' || c == '.' || c == '%' || c =='-' || c == '_' || c == '\'' || c == '$' || c == '|';
         } 
         
         private bool Match(char expected)
         {
-            if (IsAtEnd())
+            if (this.IsAtEnd())
             {
                 return false;
             }
 
-            if (source[current] != expected)
+            if (this._source[this._current] != expected)
             {
                 return false;
             }
 
-            current++;
+            this._current++;
             return true;
         }
 
         private char Peek()
         {
-            if (IsAtEnd())
-            {
-                return '\0';
-            }
-
-            return source[current];
+            return this.IsAtEnd() ? '\0' : this._source[this._current];
         }
 
         private char PeekNext()
         {
-            if (current + 1 >= source.Length)
-            {
-                return '\0';
-            }
-
-            return source[current + 1];
+            return this._current + 1 >= this._source.Length ? '\0' : this._source[this._current + 1];
         }
-        
-        private static bool IsAlpha(char c)
-        {
-            return (c >= 'a' && c <= 'z') ||
-                   (c >= 'A' && c <= 'Z')
-                   ;
-        }
-
-        private static bool IsAlphaNumeric(char c) => 
-            IsAlpha(c) || IsDigit(c);
-
-        private static bool IsDigit(char c) => 
-            c >= '0' && c <= '9';
 
         private bool IsAtEnd() => 
-            current >= source.Length;
+            this._current >= this._source.Length;
 
         private char Advance()
         {
-            current++;
-            return source[current - 1];
+            this._current++;
+            this._column++;
+            return this._source[this._current - 1];
         }
 
         private void AddToken(TokenType type)
         {
-            tokens.Add(new Token(type, new StringSegment(this.source, this.start, this.current - this.start), line));
+            this._tokens.Add(new Token(type, this._source.Subsegment(this._start, this._current - this._start), this._line));
         }
     }
 }
