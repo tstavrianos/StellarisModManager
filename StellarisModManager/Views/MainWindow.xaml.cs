@@ -15,11 +15,11 @@ namespace StellarisModManager.Views
             this.DataContext = new MainWindowViewModel(this);
         }
 
-        public void StartMoveOperation(object sender, PointerPressedEventArgs e) => this.ViewModel.StartMoveOperation(sender, e);
+        public void StartDrag(object sender, PointerPressedEventArgs e) => this.ViewModel.StartDrag(sender, e);
 
-        public void MoveOperation(object sender, PointerEventArgs e) => this.ViewModel.MoveOperation(sender, e);
+        public void DoDrag(object sender, PointerEventArgs e) => this.ViewModel.DoDrag(sender, e);
 
-        public void EndMoveOperation(object sender, PointerReleasedEventArgs e) => this.ViewModel.EndMoveOperation(sender, e);
+        public void EndDrag(object sender, PointerReleasedEventArgs e) => this.ViewModel.EndDrag(sender, e);
 
         private void InitializeComponent()
         {

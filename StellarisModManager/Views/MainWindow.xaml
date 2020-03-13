@@ -85,17 +85,12 @@
                             <CheckBox Focusable="False" IsChecked="{Binding IsEnabled}" VerticalAlignment="Center"></CheckBox>
                         </Border>
                         <TextBlock Focusable="False" Grid.Column="1" Text="{Binding Name}" Margin="5,0" />
-                        <Grid Focusable="False" Name="test" Grid.Column="2" Background="Transparent" Cursor="SizeAll" IsVisible="{Binding $parent.IsPointerOver}" ToolTip.Tip="Click and drag to move this operation." PointerPressed="StartMoveOperation" PointerReleased="EndMoveOperation" PointerMoved = "MoveOperation">
+                        <Grid Focusable="False" Name="test" Grid.Column="2" Background="Transparent" Cursor="SizeAll" IsVisible="{Binding $parent.IsPointerOver}" ToolTip.Tip="Click and drag to move this operation." PointerPressed="StartDrag" PointerReleased="EndDrag" PointerMoved = "DoDrag">
                             <DrawingPresenter Focusable="False" Drawing="{DynamicResource FontAwesome.BarsSolid}" />
                         </Grid>
                     </Grid>
                 </DataTemplate>
             </ListBox.ItemTemplate>
-            <ListBox.Styles>
-                <Style Selector="ListBoxItem">
-                    <Setter Property="IsSelected" Value="{Binding IsSelected}" />
-                </Style>
-            </ListBox.Styles>
         </ListBox>
     </Grid>
     
