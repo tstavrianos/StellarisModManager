@@ -35,23 +35,11 @@ namespace StellarisModManager.Core
             }
         }
 
-        private bool _isSelected;
-
-        public bool IsSelected
-        {
-            get => this._isSelected;
-            set
-            {
-                this._isSelected = value;
-                this.RaisePropertyChanged();
-            }
-        }
-
-        public Guid Guid { get; internal set; }
+        public Guid Guid { get; }
 
         public Mod ModData { get; }
 
-        public ModsRegistryEntry RegistryData { get; internal set; }
+        public ModsRegistryEntry RegistryData { get; }
 
         public int OriginalSpot { get; }
 

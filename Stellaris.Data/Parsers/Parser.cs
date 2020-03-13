@@ -23,7 +23,7 @@ namespace Stellaris.Data.Parsers
 
         public Config Parse(IReadOnlyList<Token> tokens)
         {
-            if (tokens.Count == 0 || tokens[0].TokenType == TokenType.SequenceTerminator) return null;
+            if (tokens.Count == 0 || tokens[0].TokenType == TokenType.SequenceTerminator) return new Config(new List<Assignment>());
             this.LoadSequenceStack(tokens);
             this.PrepareLookaheads();
 

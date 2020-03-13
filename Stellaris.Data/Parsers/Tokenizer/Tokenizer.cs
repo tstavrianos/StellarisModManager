@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace Stellaris.Data.Parsers.Tokenizer
 {
-    public class Tokenizer : ITokenizer
+    public sealed class Tokenizer : ITokenizer
     {
         private StringSegment _source;
         private int _start;

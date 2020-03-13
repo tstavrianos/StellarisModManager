@@ -24,8 +24,6 @@ namespace StellarisModManager.Core
         private readonly List<ModConflict> _conflicts;
         public IReadOnlyList<ModConflict> Conflicts => this._conflicts;
 
-        public bool Loaded { get; private set; } = false;
-
         public ModManager()
         {
             this._logger = new LoggerConfiguration()//
@@ -82,9 +80,6 @@ namespace StellarisModManager.Core
 
         public void Load()
         {
-            if (this.Loaded) return;
-            this.Loaded = true;
-
             Parallel.ForEach(this.Mods,
                 (entry, state) =>
                     {
@@ -209,65 +204,44 @@ namespace StellarisModManager.Core
             this.CalculateConficts();
         }
 
-        public void MoveToTop()
+        public void MoveToTop(int selectedIndex)
         {
-            var last = -1;
-            for (var i = 1; i < this.Mods.Count; i++)
-            {
-                if (!this.Mods[i].IsSelected) continue;
-                this.Mods.Move(i, last + 1);
-                last++;
-            }
+            if (selectedIndex <= 0 || this.Mods.Count <= selectedIndex) return;
+            this.Mods.Move(selectedIndex, 0);
             this.Validate();
             this.CalculateConficts();
         }
 
-        public void MoveUp()
+        public void MoveUp(int selectedIndex)
         {
-            for (var i = 1; i < this.Mods.Count; i++)
-            {
-                if (this.Mods[i].IsSelected && !this.Mods[i - 1].IsSelected)
-                {
-                    this.Mods.MoveItemUp(i);
-                }
-            }
+            if (selectedIndex <= 0 || this.Mods.Count <= selectedIndex) return;
+            this.Mods.Move(selectedIndex, selectedIndex - 1);
             this.Validate();
             this.CalculateConficts();
         }
 
-        public void MoveDown()
+        public void MoveDown(int selectedIndex)
         {
-            for (var i = this.Mods.Count - 2; i >= 0; i--)
-            {
-                if (this.Mods[i].IsSelected && !this.Mods[i + 1].IsSelected)
-                {
-                    this.Mods.MoveItemDown(i);
-                }
-            }
+            if (selectedIndex <= 0 || this.Mods.Count <= selectedIndex + 1) return;
+            this.Mods.Move(selectedIndex, selectedIndex + 1);
             this.Validate();
             this.CalculateConficts();
         }
 
-        public void MoveToBottom()
+        public void MoveToBottom(int selectedIndex)
         {
-            var first = this.Mods.Count;
-            for (var i = this.Mods.Count - 2; i >= 0; i--)
-            {
-                if (!this.Mods[i].IsSelected) continue;
-                this.Mods.Move(i, first - 1);
-                first--;
-            }
+            if (selectedIndex <= 0 || this.Mods.Count <= selectedIndex + 1) return;
+            this.Mods.Move(selectedIndex, this.Mods.Count - 1);
+
             this.Validate();
             this.CalculateConficts();
         }
 
         public void CheckAll()
         {
-            var all = !this.Mods.Any(x => x.IsSelected);
-
             foreach (var modEntry in this.Mods)
             {
-                modEntry.IsEnabled = all || modEntry.IsSelected;
+                modEntry.IsEnabled = true;
             }
             this.Validate();
             this.CalculateConficts();
@@ -275,18 +249,9 @@ namespace StellarisModManager.Core
 
         public void UncheckAll()
         {
-            var all = !this.Mods.Any(x => x.IsSelected);
-
             foreach (var modEntry in this.Mods)
             {
-                if (!all)
-                {
-                    if (modEntry.IsSelected) modEntry.IsEnabled = false;
-                }
-                else
-                {
-                    modEntry.IsEnabled = false;
-                }
+                modEntry.IsEnabled = false;
             }
             this.Validate();
             this.CalculateConficts();
@@ -294,18 +259,9 @@ namespace StellarisModManager.Core
 
         public void InvertCheck()
         {
-            var all = !this.Mods.Any(x => x.IsSelected);
-
             foreach (var modEntry in this.Mods)
             {
-                if (!all)
-                {
-                    if (modEntry.IsSelected) modEntry.IsEnabled = !modEntry.IsEnabled;
-                }
-                else
-                {
-                    modEntry.IsEnabled = !modEntry.IsEnabled;
-                }
+                modEntry.IsEnabled = !modEntry.IsEnabled;
             }
             this.Validate();
             this.CalculateConficts();
