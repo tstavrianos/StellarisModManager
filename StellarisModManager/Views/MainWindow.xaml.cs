@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
@@ -12,6 +13,9 @@ namespace StellarisModManager.Views
         public MainWindow()
         {
             this.InitializeComponent();
+#if DEBUG
+            this.AttachDevTools();
+#endif
             this.DataContext = new MainWindowViewModel(this);
         }
 

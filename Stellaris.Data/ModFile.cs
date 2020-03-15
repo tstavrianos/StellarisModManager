@@ -1,10 +1,8 @@
-using System;
 using Serilog;
 using Serilog.Core;
 using Serilog.Exceptions;
 using Stellaris.Data.Parsers;
-using Stellaris.Data.Parsers.Models;
-using Stellaris.Data.Parsers.Tokenizer;
+using Stellaris.Data.Parsers.pck;
 
 namespace Stellaris.Data
 {
@@ -24,7 +22,7 @@ namespace Stellaris.Data
 #endif
         }
 
-        private readonly Config _config;
+        private readonly ParseNode _tree;
         public bool Valid { get; }
         public Mod SourceMod { get; }
 
@@ -40,18 +38,13 @@ namespace Stellaris.Data
 
             this.Valid = true;
             var text = System.IO.File.ReadAllText(filename);
-            try
-            {
-                var lexer = new Tokenizer();
-                var tokens = lexer.Tokenize(text);
-                var parser = new Parser();
-                this._config = parser.Parse(tokens);
-            }
-            catch (Exception ex)
-            {
-                Log?.Error(ex, "ModFile");
-                this.Valid = false;
-            }
+            var lexer = new Tokenizer(text);
+            var parser = new Parser(lexer);
+            this._tree = parser.ParseReductions(true);
+            if (this._tree.Symbol == "assignmentList" || this._tree.Symbol == "valueList")
+                return;
+            this.Valid = false;
+            Log?.Error($"{filename} is not valid");
         }
     }
 }

@@ -10,9 +10,6 @@
         Title="Stellaris Mod Manager"
         Width="800" Height="450">
 
-    <Design.DataContext>
-        <vm:MainWindowViewModel />
-    </Design.DataContext>
 
     <Grid RowDefinitions="*" ColumnDefinitions="auto,*">
         <StackPanel Grid.Column="0">

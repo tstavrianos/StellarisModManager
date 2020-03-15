@@ -49,6 +49,7 @@ namespace StellarisModManager.Core
             foreach (var file in Directory.EnumerateFiles(this.ModPath, "*.mod"))
             {
                 var mod = new Mod(file);
+                if (!mod.Valid) continue;
                 this.Mods.Add(new ModEntry(mod, null, null));
             }
             mods.AddRange(this.Mods.Select(x => x.ModData));

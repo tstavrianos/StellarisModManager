@@ -8,10 +8,7 @@ using System.IO;
 using Ionic.Zip;
 using Stellaris.Data.Parsers;
 using Path2 = System.IO.Path;
-using Stellaris.Data.Parsers.Models;
-using Stellaris.Data.Parsers.Tokenizer;
-using Array = Stellaris.Data.Parsers.Models.Array;
-using String = Stellaris.Data.Parsers.Models.String;
+using Stellaris.Data.Parsers.pck;
 
 namespace Stellaris.Data
 {
@@ -21,6 +18,12 @@ namespace Stellaris.Data
         private static readonly string[] AllowedExtensions = { ".gfx", ".gui", ".txt", ".asset" };
         internal static readonly Logger Log;
 
+        private static string TrimQuotes(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value) || value.Length < 3 || value[0] != '"' ||
+                value[value.Length - 1] != '"') return value;
+            return value.Substring(1, value.Length - 2);
+        }
         static Mod()
         {
 #if DEBUG
@@ -33,7 +36,7 @@ namespace Stellaris.Data
 #endif
         }
 
-        private readonly Config _config;
+        private readonly ParseNode _tree;
 
         public string Id { get; }
 
@@ -74,81 +77,83 @@ namespace Stellaris.Data
             this.Valid = true;
 
             var text = File.ReadAllText(file);
-            try
-            {
-                var lexer = new Tokenizer();
-                var tokens = lexer.Tokenize(text);
-                var parser = new Parser();
-                this._config = parser.Parse(tokens);
-            }
-            catch (Exception ex)
-            {
-                Log?.Error(ex, "Mod");
-                this.Valid = false;
-            }
-
-            if (!this.Valid) return;
+            var lexer = new Tokenizer(text);
+            var parser = new Parser(lexer);
+            this._tree = parser.ParseReductions(true);
             this.Tags = new List<string>();
             this.Dependencies = new List<string>();
-            foreach (var a in this._config)
+            if (this._tree.Symbol == "assignmentList")
             {
-                var key = (a.Field as String)?.Value;
-                var value = a.Value;
-                switch (key)
+                foreach (var child in this._tree.Children)
                 {
-                    case "name" when value is String s:
-                        this.Name = s.Value;
-                        break;
-                    case "archive" when value is String s:
-                        this.Archive = s.Value;
-                        break;
-                    case "path" when value is String s:
-                        this.Path = s.Value;
-                        break;
-                    case "picture" when value is String s:
-                        this.Picture = s.Value;
-                        break;
-                    case "remote_file_id" when value is String s:
-                        this.RemoteFileId = s.Value;
-                        break;
-                    case "supported_version" when value is String s:
-                        this.SupportedVersion = new SupportedVersion(s.Value);
-                        break;
-                    case "version" when value is String s:
-                        this.Version = s.Value;
-                        break;
-                    case "replace_path" when value is String s:
-                        this._replacePath = s.Value;
-                        break;
-                    case "tags" when value is Array s:
-                        foreach (var entry in s)
+                    if (child.Symbol == "assignment" && child.Children.Count == 3 && child.Children[1].Symbol == "OPERATOR" && child.Children[1].Value == "=" && child.Children[0].Symbol == "SYMBOL")
+                    {
+                        switch (child.Children[0].Value)
                         {
-                            if(entry is String s1) this.Tags.Add(s1.Value);
+                            case "name" when child.Children[2].Symbol == "STRING":
+                                this.Name = TrimQuotes(child.Children[2].Value);
+                                break;
+                            case "picture" when child.Children[2].Symbol == "STRING":
+                                this.Picture = TrimQuotes(child.Children[2].Value);
+                                break;
+                            case "supported_version" when child.Children[2].Symbol == "STRING":
+                                this.SupportedVersion = new SupportedVersion(TrimQuotes(child.Children[2].Value));
+                                break;
+                            case "path" when child.Children[2].Symbol == "STRING":
+                                this.Path = TrimQuotes(child.Children[2].Value);
+                                break;
+                            case "remote_file_id" when child.Children[2].Symbol == "STRING":
+                                this.RemoteFileId = TrimQuotes(child.Children[2].Value);
+                                break;
+                            case "version" when child.Children[2].Symbol == "STRING":
+                                this.Version = TrimQuotes(child.Children[2].Value);
+                                break;
+                            case "archive" when child.Children[2].Symbol == "STRING":
+                                this.Archive = TrimQuotes(child.Children[2].Value);
+                                break;
+                            case "replace_path" when child.Children[2].Symbol == "STRING":
+                                this._replacePath = TrimQuotes(child.Children[2].Value);
+                                break;
+                            case "tags" when child.Children[2].Symbol == "array":
+                                this.Tags.AddRange(child.Children[2].Children.Select(x => TrimQuotes(x.Value)));
+                                break;
+                            case "dependencies" when child.Children[2].Symbol == "array":
+                                this.Dependencies.AddRange(child.Children[2].Children.Select(x => TrimQuotes(x.Value)));
+                                break;
+                            default:
+                                this.Valid = false;
+                                Log?.Error($"{file}: unknown symbol found: {child.Children[0].Value}");
+                                break;
                         }
+                    }
+                    else
+                    {
+                        if(child.Symbol != "assignment")
+                            Log?.Error("{file}: node is not an assignment");
+                        if(child.Children.Count == 3 && child.Children[1].Symbol == "OPERATOR" && child.Children[1].Value == "=" && child.Children[0].Symbol == "SYMBOL")
+                            Log?.Error("{file}: node is not an assignment with three sub-nodes");
+                        this.Valid = false;
                         break;
-                    case "dependencies" when value is Array s:
-                        foreach (var entry in s)
-                        {
-                            if(entry is String s1) this.Dependencies.Add(s1.Value);
-                        }
-                        break;
-                    default:
-                        Log.Debug($"{a}, {key}");
-                        break;
-                }
+                    }
 
-
-                switch (this.SupportedVersion)
-                {
-                    case null when !string.IsNullOrWhiteSpace(this.Version) && this.Version.Contains(".*"):
-                        this.SupportedVersion = new SupportedVersion(this.Version);
-                        break;
-                    case null:
-                        this.SupportedVersion = new SupportedVersion("1.0.0");
-                        break;
+                    if (!this.Valid) break;
                 }
             }
+            else
+            {
+                this.Valid = false;
+                Log?.Error($"{file} does not begin with an assignment list");
+            }
 
+            switch (this.SupportedVersion)
+            {
+                case null when !string.IsNullOrWhiteSpace(this.Version) && this.Version.Contains(".*"):
+                    this.SupportedVersion = new SupportedVersion(this.Version);
+                    break;
+                case null:
+                    this.SupportedVersion = new SupportedVersion("1.0.0");
+                    break;
+            }
             if (!string.IsNullOrWhiteSpace(this.Path) || !string.IsNullOrWhiteSpace(this.Archive)) return;
             this.Valid = false;
             Log?.Debug($"{this.Id} - Path and Archive are blank");
@@ -198,25 +203,6 @@ namespace Stellaris.Data
                         tempFolder += Path2.DirectorySeparatorChar;
 
                     ZipFile.Read(zipInfo.FullName).ExtractAll(tempFolder, ExtractExistingFileAction.OverwriteSilently);
-
-                    /*using (var archive = ZipFile.OpenRead(mPath))
-                    {
-                        foreach (var entry in archive.Entries)
-                        {
-                            // Gets the full path to ensure that relative segments are removed.
-                            var destinationPath =
-                                Path2.GetFullPath(Path2.Combine(tempFolder, entry.FullName));
-
-                            if (!System.IO.Directory.Exists(Path2.GetDirectoryName(destinationPath)))
-                            {
-                                Directory.CreateDirectory(Path2.GetDirectoryName(destinationPath));
-                            }
-                            // Ordinal match is safest, case-sensitive volumes can be mounted within volumes that
-                            // are case-insensitive.
-                            if (destinationPath.StartsWith(tempFolder, StringComparison.Ordinal))
-                                entry.ExtractToFile(destinationPath);
-                        }
-                    }*/
                 }
                 else
                 {
