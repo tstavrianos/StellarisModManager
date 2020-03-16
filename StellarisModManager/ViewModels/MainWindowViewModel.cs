@@ -5,7 +5,8 @@ using Avalonia.Input;
 using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
 using ReactiveUI;
-using StellarisModManager.Core;
+using Paradox.Common;
+using Paradox.Common.Models;
 using StellarisModManager.Views;
 
 namespace StellarisModManager.ViewModels
@@ -29,7 +30,6 @@ namespace StellarisModManager.ViewModels
             this._window = window;
             this._modList = this._window.Find<ListBox>("ModList");
             this.Manager = new ModManager();
-            this.Manager.Load();
 
             var moveUp = this.WhenAnyValue(x => x.SelectedIndex).Select(x => x > 0);
             var moveDown = this.WhenAnyValue(x => x.SelectedIndex).Select(x => x >= 0 && x < this.Manager.Mods.Count - 1);
@@ -67,8 +67,8 @@ namespace StellarisModManager.ViewModels
             var hoveredItem = (ListBoxItem) this._modList.GetLogicalChildren().FirstOrDefault(x => this._window.GetVisualsAt(e.GetPosition(this._window)).Contains(((IVisual)x).GetVisualChildren().First()));
             if (this._dragItem != null && hoveredItem != null && !Equals(this._dragItem, hoveredItem))
             {
-                var a = this._dragItem.DataContext as ModEntry;
-                var b = hoveredItem.DataContext as ModEntry;
+                var a = this._dragItem.DataContext as ModData;
+                var b = hoveredItem.DataContext as ModData;
                 this.Manager.Mods.Move(this.Manager.Mods.IndexOf(a),
                     this.Manager.Mods.IndexOf(b));
             }

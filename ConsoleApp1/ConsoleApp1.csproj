@@ -11,8 +11,8 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Paradox.Common\Paradox.Common.csproj" />
       <ProjectReference Include="..\Stellaris.Data\Stellaris.Data.csproj" />
-      <ProjectReference Include="..\StellarisModManager.Core\StellarisModManager.Core.csproj" />
     </ItemGroup>
 
 </Project>
