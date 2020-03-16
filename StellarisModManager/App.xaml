@@ -9,7 +9,6 @@
     <Application.Styles>
         <StyleInclude Source="avares://Avalonia.Themes.Default/DefaultTheme.xaml"/>
         <StyleInclude Source="avares://Avalonia.Themes.Default/Accents/BaseLight.xaml"/>
-        <StyleInclude Source="avares://StellarisModManager/Icons/FontAwesome.xaml"/>
-
+        <StyleInclude Source="avares://StellarisModManager/MicroCubeAvalonia/DefaultTheme.xaml"/>
     </Application.Styles>
 </Application>

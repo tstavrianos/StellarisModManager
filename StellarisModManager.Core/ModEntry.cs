@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using Stellaris.Data.Json;
-using Stellaris.Data;
+using StellarisModManager.Core.Models;
+using ModsRegistryEntry = StellarisModManager.Core.Json.ModsRegistryEntry;
 
 namespace StellarisModManager.Core
 {
@@ -37,13 +37,13 @@ namespace StellarisModManager.Core
 
         public Guid Guid { get; }
 
-        public Mod ModData { get; }
+        public ModData ModDataData { get; }
 
         public ModsRegistryEntry RegistryData { get; }
 
         public int OriginalSpot { get; }
 
-        public string Name => this.ModData.Name;
+        public string Name => this.ModDataData.Name;
 
         public IList<string> Issues { get; }
 
@@ -51,13 +51,15 @@ namespace StellarisModManager.Core
 
         public bool Overwrites { get; set; }
         public bool IsOverwritten { get; set; }
+        
+        public bool Outdated { get; internal set; }
 
-        public ModEntry(Mod mod, string guid, ModsRegistryEntry entry)
+        public ModEntry(ModData modData, string guid, ModsRegistryEntry entry)
         {
             this.OriginalSpot = _entries++;
             this.Guid = guid != null ? Guid.Parse(guid) : Guid.NewGuid();
             this.RegistryData = entry;
-            this.ModData = mod;
+            this.ModDataData = modData;
             this.Issues = new List<string>();
         }
 
@@ -70,7 +72,7 @@ namespace StellarisModManager.Core
 
         public override string ToString()
         {
-            return this.ModData.Name;
+            return this.ModDataData.Name;
         }
     }
 }

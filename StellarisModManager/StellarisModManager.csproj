@@ -14,9 +14,12 @@
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="0.9.*" />
-    <PackageReference Include="Avalonia.Desktop" Version="0.9.*" />
-    <PackageReference Include="Avalonia.ReactiveUI" Version="0.9.*" />
+    <PackageReference Include="Avalonia" Version="0.9.4" />
+    <PackageReference Include="Avalonia.Desktop" Version="0.9.4" />
+    <PackageReference Include="Avalonia.ReactiveUI" Version="0.9.4" />
+    <PackageReference Include="Avalonia.Remote.Protocol" Version="0.9.4" />
+    <PackageReference Include="ReactiveProperty" Version="6.2.0" />
+    <PackageReference Include="StrongNamer" Version="0.2.5" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\StellarisModManager.Core\StellarisModManager.Core.csproj" />

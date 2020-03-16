@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:core="clr-namespace:StellarisModManager.Core;assembly=StellarisModManager.Core"
+        xmlns:iconPack="clr-namespace:MicroCubeAvalonia.IconPack;assembly=StellarisModManager"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="StellarisModManager.Views.MainWindow"
         Icon="/Assets/avalonia-logo.ico"
@@ -15,61 +16,61 @@
         <StackPanel Grid.Column="0">
             <Button Name="MoveToTop" HorizontalContentAlignment="Left" Command="{Binding MoveToTop}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
-                    <DrawingPresenter Focusable="False" Drawing="{DynamicResource FontAwesome.AngleDoubleUpSolid}" Width="16" Height="16"/>
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.AngleDoubleUpSolid"  Width="16" Height="16"/>
                     <TextBlock Focusable="False" Text="To Top"/>
                 </StackPanel>
             </Button>
             <Button Name="MoveUp" HorizontalContentAlignment="Left" Command="{Binding MoveUp}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
-                    <DrawingPresenter Focusable="False" Drawing="{DynamicResource FontAwesome.AngleUpSolid}" Width="16" Height="16"/>
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.AngleUpSolid"  Width="16" Height="16"/>
                     <TextBlock Focusable="False" Text="Up"/>
                 </StackPanel>
             </Button>
             <Button Name="MoveDown" HorizontalContentAlignment="Left" Command="{Binding MoveDown}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
-                    <DrawingPresenter Focusable="False" Drawing="{DynamicResource FontAwesome.AngleDownSolid}" Width="16" Height="16"/>
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.AngleDownSolid"  Width="16" Height="16"/>
                     <TextBlock Focusable="False" Text="Down"/>
                 </StackPanel>
             </Button>
             <Button Name="MoveToBottom" HorizontalContentAlignment="Left" Command="{Binding MoveToBottom}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
-                    <DrawingPresenter Focusable="False" Drawing="{DynamicResource FontAwesome.AngleDoubleDownSolid}" Width="16" Height="16"/>
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.AngleDoubleDownSolid"  Width="16" Height="16"/>
                     <TextBlock Focusable="False" Text="To Bottom"/>
                 </StackPanel>
             </Button>
             <Button Name="AlphaSort" HorizontalContentAlignment="Left" Command="{Binding AlphaSort}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
-                    <DrawingPresenter Focusable="False" Drawing="{DynamicResource FontAwesome.SortAlphaDownSolid}" Width="16" Height="16"/>
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SortAlphaDownSolid"  Width="16" Height="16"/>
                     <TextBlock Focusable="False" Text="Alphabetical"/>
                 </StackPanel>
             </Button>
             <Button Name="ReverseOrder" HorizontalContentAlignment="Left" Command="{Binding ReverseOrder}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
-                    <DrawingPresenter Focusable="False" Drawing="{DynamicResource FontAwesome.SortAmountUpSolid}" Width="16" Height="16"/>
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SortAmountUpSolid"  Width="16" Height="16"/>
                     <TextBlock Focusable="False" Text="Reverse"/>
                 </StackPanel>
             </Button>
             <Button Name="CheckAll" HorizontalContentAlignment="Left" Command="{Binding CheckAll}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
-                    <DrawingPresenter Focusable="False" Drawing="{DynamicResource FontAwesome.CheckSquareRegular}" Width="16" Height="16"/>
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.CheckSquareRegular"  Width="16" Height="16"/>
                     <TextBlock Focusable="False" Text="All"/>
                 </StackPanel>
             </Button>
             <Button Name="UncheckAll" HorizontalContentAlignment="Left" Command="{Binding UncheckAll}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
-                    <DrawingPresenter Focusable="False" Drawing="{DynamicResource FontAwesome.SquareRegular}" Width="16" Height="16"/>
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SquareRegular"  Width="16" Height="16"/>
                     <TextBlock Focusable="False" Text="None"/>
                 </StackPanel>
             </Button>
             <Button Name="InvertCheck" HorizontalContentAlignment="Left" Command="{Binding InvertCheck}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
-                    <DrawingPresenter Focusable="False" Drawing="{DynamicResource FontAwesome.CheckSquareSolid}" Width="16" Height="16"/>
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.CheckSquareSolid"  Width="16" Height="16"/>
                     <TextBlock Focusable="False" Text="Invert"/>
                 </StackPanel>
             </Button>
             <Button Name="Save" HorizontalContentAlignment="Left" Command="{Binding Save}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
-                    <DrawingPresenter Focusable="False" Drawing="{DynamicResource FontAwesome.SaveSolid}" Width="16" Height="16"/>
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SaveSolid"  Width="16" Height="16"/>
                     <TextBlock Focusable="False" Text="Export"/>
                 </StackPanel>
             </Button>
@@ -77,14 +78,13 @@
         <ListBox Grid.Column="1" Items="{Binding Path=Manager.Mods}" SelectedIndex="{Binding SelectedIndex}" Name="ModList" BorderThickness="0">
             <ListBox.ItemTemplate>
                 <DataTemplate DataType="core:ModEntry">
-                    <Grid ColumnDefinitions="auto,*,16" RowDefinitions="16" Name="OperationGrid" Margin="0" Background="Transparent">
+                    <Grid ColumnDefinitions="auto,*,16,16" RowDefinitions="16" Name="OperationGrid" Margin="0" Background="Transparent">
                         <Border BorderThickness="1" Grid.Column="0" BorderBrush="{DynamicResource ThemeBorderMidBrush}" Margin="0,0,5,0">
                             <CheckBox Focusable="False" IsChecked="{Binding IsEnabled}" VerticalAlignment="Center"></CheckBox>
                         </Border>
                         <TextBlock Focusable="False" Grid.Column="1" Text="{Binding Name}" Margin="5,0" />
-                        <Grid Focusable="False" Name="test" Grid.Column="2" Background="Transparent" Cursor="SizeAll" IsVisible="{Binding $parent.IsPointerOver}" ToolTip.Tip="Click and drag to move this operation." PointerPressed="StartDrag" PointerReleased="EndDrag" PointerMoved = "DoDrag">
-                            <DrawingPresenter Focusable="False" Drawing="{DynamicResource FontAwesome.BarsSolid}" />
-                        </Grid>
+                        <iconPack:IconControl Grid.Column="2" Background="Transparent" Foreground="Red" Kind="PackIconFontAwesomeKind.ExclamationTriangleSolid" IsVisible="{Binding Outdated}" ToolTip.Tip="{Binding ModDataData.SupportedVersion}"/>
+                        <iconPack:IconControl Grid.Column="3" Cursor="SizeAll" Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.BarsSolid" IsVisible="{Binding $parent.IsPointerOver}" ToolTip.Tip="Click and drag to move this operation." PointerPressed="StartDrag" PointerReleased="EndDrag" PointerMoved = "DoDrag" />
                     </Grid>
                 </DataTemplate>
             </ListBox.ItemTemplate>
@@ -102,7 +102,6 @@
             <Setter Property="BorderBrush" Value="Black" />
             <Setter Property="Margin" Value="0,-2,0,0" />
         </Style>
-      
     </Window.Styles>
 
 </Window>

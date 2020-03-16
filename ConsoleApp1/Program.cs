@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using Stellaris.Data.Parsers;
-using Stellaris.Data.Parsers.pck;
+using StellarisModManager.Core.Parsers;
+using StellarisModManager.Core.Parsers.pck;
 
 namespace ConsoleApp1
 {
@@ -18,8 +18,6 @@ namespace ConsoleApp1
 
         static void Run(string file)
         {
-            var s = new Tokenizer(null);
-            var p = new global::Stellaris.Data.Parsers.Parser(null);
             if (Path.GetFileName(file) == "HOW_TO_MAKE_NEW_SHIPS.txt") return;
             if (Path.GetFileName(file) == "readme.txt") return;
             if (Path.GetFileName(file) == "README_weapon_component_stat_docs.txt") return;
@@ -27,7 +25,7 @@ namespace ConsoleApp1
             if (Path.GetFileName(file).EndsWith("_sc.txt", StringComparison.OrdinalIgnoreCase)) return;
             var text = File.ReadAllText(file, CodePagesEncodingProvider.Instance.GetEncoding(1252));
             var t = new Tokenizer(text);
-            var parser = new global::Stellaris.Data.Parsers.Parser(t);
+            var parser = new Parser(t);
             var tree = parser.ParseReductions(true); // pass true if you want the tree to be trimmed.
             PrintNode(tree, String.Empty);
         }
