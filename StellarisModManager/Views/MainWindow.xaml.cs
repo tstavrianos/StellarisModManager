@@ -1,8 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Logging;
 using Avalonia.Markup.Xaml;
+using Paradox.Common;
 using Serilog;
 using StellarisModManager.ViewModels;
 

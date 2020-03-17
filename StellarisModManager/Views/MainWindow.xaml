@@ -3,17 +3,66 @@
         xmlns:vm="clr-namespace:StellarisModManager.ViewModels;assembly=StellarisModManager"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:core="clr-namespace:Paradox.Common.Models;assembly=Paradox.Common"
         xmlns:iconPack="clr-namespace:MicroCubeAvalonia.IconPack;assembly=StellarisModManager"
+        xmlns:common="clr-namespace:Paradox.Common;assembly=Paradox.Common"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="StellarisModManager.Views.MainWindow"
         Icon="/Assets/avalonia-logo.ico"
         Title="Stellaris Mod Manager"
         Width="800" Height="450">
 
-
-    <Grid RowDefinitions="*" ColumnDefinitions="auto,*">
-        <StackPanel Grid.Column="0">
+    <Grid RowDefinitions="*" ColumnDefinitions="auto,*,auto,auto">
+        <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Vertical">
+            <Button Name="CheckAll" HorizontalContentAlignment="Left" Command="{Binding CheckAll}" ClickMode="Release">
+                <StackPanel Orientation="Horizontal">
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.CheckSquareRegular"  Width="16" Height="16"/>
+                    <TextBlock Focusable="False" Text="All"/>
+                </StackPanel>
+            </Button>
+            <Button Name="UncheckAll" HorizontalContentAlignment="Left" Command="{Binding UncheckAll}" ClickMode="Release">
+                <StackPanel Orientation="Horizontal">
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SquareRegular"  Width="16" Height="16"/>
+                    <TextBlock Focusable="False" Text="None"/>
+                </StackPanel>
+            </Button>
+            <Button Name="InvertCheck" HorizontalContentAlignment="Left" Command="{Binding InvertCheck}" ClickMode="Release">
+                <StackPanel Orientation="Horizontal">
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.CheckSquareSolid"  Width="16" Height="16"/>
+                    <TextBlock Focusable="False" Text="Invert"/>
+                </StackPanel>
+            </Button>
+            <Button Name="Save" HorizontalContentAlignment="Left" Command="{Binding Save}" ClickMode="Release">
+                <StackPanel Orientation="Horizontal">
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SaveSolid"  Width="16" Height="16"/>
+                    <TextBlock Focusable="False" Text="Export"/>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+        <DataGrid Grid.Row="0" Grid.Column="1" CanUserReorderColumns="True" CanUserSortColumns="True" CanUserResizeColumns="True" Items="{Binding Manager.Mods}">
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header="Enabled" Width="auto">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox Focusable="False" IsChecked="{Binding IsChecked}" VerticalAlignment="Center"></CheckBox>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="DisplayName" Binding="{Binding DisplayName}" Width="*"/>
+                <DataGridTextColumn Header="Version" Binding="{Binding ModDefinitionFile.Version}" Width="auto"/>
+                <DataGridTextColumn Header="SupportedVersion" Binding="{Binding ModDefinitionFile.SupportedVersion}" Width="auto"/>
+            </DataGrid.Columns>
+        </DataGrid>
+        <ListBox Grid.Row="0" Grid.Column="2" SelectedIndex="{Binding SelectedIndex}" Name="ModList" BorderThickness="0" IsVisible="False">
+            <ListBox.ItemTemplate>
+                <DataTemplate DataType="common:ModEntry">
+                    <Grid ColumnDefinitions="*,16" RowDefinitions="16" Name="OperationGrid" Margin="0" Background="Transparent">
+                        <TextBlock Focusable="False" Grid.Column="0" Text="{Binding DisplayName}" Margin="5,0" />
+                        <iconPack:IconControl Grid.Column="1" Cursor="SizeAll" Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.BarsSolid" IsVisible="{Binding $parent.IsPointerOver}" ToolTip.Tip="Click and drag to move this operation." PointerPressed="StartDrag" PointerReleased="EndDrag" PointerMoved = "DoDrag" />
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <StackPanel Grid.Row="0" Grid.Column="3" Orientation="Vertical">
             <Button Name="MoveToTop" HorizontalContentAlignment="Left" Command="{Binding MoveToTop}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
                     <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.AngleDoubleUpSolid"  Width="16" Height="16"/>
@@ -50,58 +99,19 @@
                     <TextBlock Focusable="False" Text="Reverse"/>
                 </StackPanel>
             </Button>
-            <Button Name="CheckAll" HorizontalContentAlignment="Left" Command="{Binding CheckAll}" ClickMode="Release">
-                <StackPanel Orientation="Horizontal">
-                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.CheckSquareRegular"  Width="16" Height="16"/>
-                    <TextBlock Focusable="False" Text="All"/>
-                </StackPanel>
-            </Button>
-            <Button Name="UncheckAll" HorizontalContentAlignment="Left" Command="{Binding UncheckAll}" ClickMode="Release">
-                <StackPanel Orientation="Horizontal">
-                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SquareRegular"  Width="16" Height="16"/>
-                    <TextBlock Focusable="False" Text="None"/>
-                </StackPanel>
-            </Button>
-            <Button Name="InvertCheck" HorizontalContentAlignment="Left" Command="{Binding InvertCheck}" ClickMode="Release">
-                <StackPanel Orientation="Horizontal">
-                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.CheckSquareSolid"  Width="16" Height="16"/>
-                    <TextBlock Focusable="False" Text="Invert"/>
-                </StackPanel>
-            </Button>
-            <Button Name="Save" HorizontalContentAlignment="Left" Command="{Binding Save}" ClickMode="Release">
-                <StackPanel Orientation="Horizontal">
-                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SaveSolid"  Width="16" Height="16"/>
-                    <TextBlock Focusable="False" Text="Export"/>
-                </StackPanel>
-            </Button>
         </StackPanel>
-        <ListBox Grid.Column="1" Items="{Binding Path=Manager.Mods}" SelectedIndex="{Binding SelectedIndex}" Name="ModList" BorderThickness="0">
-            <ListBox.ItemTemplate>
-                <DataTemplate DataType="core:ModData">
-                    <Grid ColumnDefinitions="auto,*,16,16" RowDefinitions="16" Name="OperationGrid" Margin="0" Background="Transparent" IsPointerOver="{Binding IsPointerOver, Mode=OneWayToSource}">
-                        <Border BorderThickness="1" Grid.Column="0" BorderBrush="{DynamicResource ThemeBorderMidBrush}" Margin="0,0,5,0">
-                            <CheckBox Focusable="False" IsChecked="{Binding IsChecked}" VerticalAlignment="Center"></CheckBox>
-                        </Border>
-                        <TextBlock Focusable="False" Grid.Column="1" Text="{Binding Name}" Margin="5,0" />
-                        <iconPack:IconControl Grid.Column="2" Background="Transparent" Foreground="Red" Kind="PackIconFontAwesomeKind.ExclamationTriangleSolid" IsVisible="{Binding Outdated}" ToolTip.Tip="{Binding SupportedVersion}"/>
-                        <iconPack:IconControl Grid.Column="3" Cursor="SizeAll" Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.BarsSolid" IsVisible="{Binding IsPointerOver, Mode=OneWay}" ToolTip.Tip="Click and drag to move this operation." PointerPressed="StartDrag" PointerReleased="EndDrag" PointerMoved = "DoDrag" />
-                    </Grid>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
     </Grid>
     
     <Window.Styles>
         <Style Selector="ListBoxItem.BlackBottom">
             <Setter Property="BorderThickness" Value="0,0,0,2" />
-            <Setter Property="BorderBrush" Value="Black" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderMidBrush}" />
             <Setter Property="Margin" Value="0,0,0,-2" />
         </Style>
         <Style Selector="ListBoxItem.BlackTop">
             <Setter Property="BorderThickness" Value="0,2,0,0" />
-            <Setter Property="BorderBrush" Value="Black" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderMidBrush}" />
             <Setter Property="Margin" Value="0,-2,0,0" />
         </Style>
     </Window.Styles>
-
 </Window>

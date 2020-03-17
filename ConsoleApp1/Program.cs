@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using Paradox.Common.Parsers;
 using Paradox.Common.Parsers.pck;
 
 namespace ConsoleApp1

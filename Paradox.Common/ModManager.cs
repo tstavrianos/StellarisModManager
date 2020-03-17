@@ -3,25 +3,28 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using DynamicData;
+using DynamicData.Annotations;
 using Newtonsoft.Json;
 using Serilog;
-using Paradox.Common.Models;
 
 namespace Paradox.Common
 {
     public sealed class ModManager
     {
-        public ObservableCollection<ModData> Mods { get; }
+        public ObservableCollection<ModEntry> Mods { get; } = new ObservableCollection<ModEntry>();
+        public ObservableCollection<ModEntry> Enabled { get; } = new ObservableCollection<ModEntry>();
         public string BasePath { get; }
         public string ModPath { get; }
-        private readonly SupportedVersion _version;
-        private readonly ILogger _logger;
+        internal readonly SupportedVersion Version;
+        internal readonly ILogger Logger;
+        internal bool Loaded;
 
         public ModManager(ILogger logger = null)
         {
-            this._logger = logger;
-            this._version = new SupportedVersion(2, 5, 1);
-            this.Mods = new ObservableCollection<ModData>();
+            this.Loaded = false;
+            this.Logger = logger;
+            this.Version = new SupportedVersion(2, 5, 1);
             this.BasePath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\\Paradox Interactive\\Stellaris";
             if (!Directory.Exists(this.BasePath))
                 this.BasePath = @"C:\usefull\Newfolder\git\StellarisModManager\Stellaris";
@@ -30,43 +33,33 @@ namespace Paradox.Common
             var gameData = LoadJson(Path.Combine(this.BasePath, "game_data.json"), x => { }, () => new Json.GameData { ModsOrder = new List<string>() });
             var dlcLoad = LoadJson(Path.Combine(this.BasePath, "dlc_load.json"), x => { }, () => new Json.DlcLoad { DisabledDlcs = new List<string>(), EnabledMods = new List<string>() });
             var modsRegistry = LoadJson(Path.Combine(this.BasePath, "mods_registry.json"), x => { }, () => new Json.ModsRegistry());
-
-            var mods = new List<ModData>();
-
+            var mods = ModDirectoryHelper.LoadModDefinitions(this.BasePath, true, logger);
+            var i = 0;
             foreach (var (guid, entry) in modsRegistry)
             {
                 if(string.IsNullOrWhiteSpace(entry.GameRegistryId)) continue;
-                var modFile = Path.Combine(this.BasePath, entry.GameRegistryId);
-                if (!File.Exists(modFile)) continue;
-                var data = new ModData(modFile, entry, this._logger);
-                data.Outdated = data.SupportedVersion < this._version;
-                data.OriginalSpot = int.MaxValue;
-                this.Mods.Add(data);
-            }
-
-            var i = 0;
-            foreach (var t in gameData.ModsOrder)
-            {
-                var data = this.Mods.FirstOrDefault(x =>
-                    x.Entry.Id.Equals(t, StringComparison.OrdinalIgnoreCase));
-                if(data == null) continue;
-                data.OriginalSpot = i++;
+                var mod = mods.FirstOrDefault(x => x.Key.Equals(entry.GameRegistryId, StringComparison.OrdinalIgnoreCase));
+                if (mod == null) continue;
+                var modEntry = new ModEntry(this){ModDefinitionFile = mod, ModsRegistryEntry = entry, OriginalSpot = i++};
+                this.Mods.Add(modEntry);
             }
 
             foreach (var t in dlcLoad.EnabledMods)
             {
                 var data = this.Mods.FirstOrDefault(x =>
-                    x.Key.Equals(t, StringComparison.OrdinalIgnoreCase));
+                    x.ModDefinitionFile.Key.Equals(t, StringComparison.OrdinalIgnoreCase));
                 if(data == null) continue;
                 data.IsChecked = true;
+                this.Enabled.Add(data);
             }
-            
-            var items = this.Mods.OrderBy(x => x.OriginalSpot).ToArray();
-            this.Mods.Clear();
-            foreach (var item in items)
+
+            foreach (var t in gameData.ModsOrder)
             {
-                this.Mods.Add(item);
+                var data = this.Mods.FirstOrDefault(x =>
+                    x.ModsRegistryEntry.Id.Equals(t, StringComparison.OrdinalIgnoreCase));
+                if(data?.IsChecked != false) this.Enabled.Add(data);
             }
+            this.Loaded = true;
         }
 
         private static T LoadJson<T>(string file, Action<T> found, Func<T> notFound)
@@ -114,16 +107,14 @@ namespace Paradox.Common
             var modsRegistryFile = Path.Combine(this.BasePath, "mods_registry.json");
             var modsRegistry = LoadJson(modsRegistryFile, x => x.Clear(), () => new Json.ModsRegistry());
 
-            foreach (var item in this.Mods)
-                gameData.ModsOrder.Add(item.Entry.Id);
-
+            foreach (var item in this.Enabled)
+                gameData.ModsOrder.Add(item.ModsRegistryEntry.Id);
+            foreach(var item in this.Mods.Where(x => x.IsChecked == false).OrderBy(x => x.OriginalSpot))
+                gameData.ModsOrder.Add(item.ModsRegistryEntry.Id);
+            foreach (var item in this.Mods.Where(x => x.IsChecked).OrderBy(x => x.OriginalSpot))
+                dlcLoad.EnabledMods.Add(item.ModDefinitionFile.Key);
             foreach (var item in this.Mods.OrderBy(x => x.OriginalSpot))
-                dlcLoad.EnabledMods.Add(item.Key);
-
-            foreach (var item in this.Mods.OrderBy(x => x.OriginalSpot))
-            {
-                modsRegistry.Add(item.Entry.Id, item.Entry);
-            }
+                modsRegistry.Add(item.ModsRegistryEntry.Id, item.ModsRegistryEntry);
 
             BackupFile(gameDataFile);
             File.WriteAllText(gameDataFile, JsonConvert.SerializeObject(gameData));
@@ -135,42 +126,42 @@ namespace Paradox.Common
 
         public void AlphaSort()
         {
-            var items = this.Mods.OrderBy(x => x.ToString()).ToArray();
-            this.Mods.Clear();
+            var items = this.Enabled.OrderBy(x => x.ToString()).ToArray();
+            this.Enabled.Clear();
             foreach (var item in items)
             {
-                this.Mods.Add(item);
+                this.Enabled.Add(item);
             }
         }
 
         public void ReverseOrder()
         {
-            for (var i = 0; i < this.Mods.Count; i++)
-                this.Mods.Move(this.Mods.Count - 1, i);
+            for (var i = 0; i < this.Enabled.Count; i++)
+                this.Enabled.Move(this.Enabled.Count - 1, i);
         }
 
         public void MoveToTop(int selectedIndex)
         {
-            if (selectedIndex <= 0 || this.Mods.Count <= selectedIndex) return;
-            this.Mods.Move(selectedIndex, 0);
+            if (selectedIndex <= 0 || this.Enabled.Count <= selectedIndex) return;
+            this.Enabled.Move(selectedIndex, 0);
         }
 
         public void MoveUp(int selectedIndex)
         {
-            if (selectedIndex <= 0 || this.Mods.Count <= selectedIndex) return;
-            this.Mods.Move(selectedIndex, selectedIndex - 1);
+            if (selectedIndex <= 0 || this.Enabled.Count <= selectedIndex) return;
+            this.Enabled.Move(selectedIndex, selectedIndex - 1);
         }
 
         public void MoveDown(int selectedIndex)
         {
-            if (selectedIndex <= 0 || this.Mods.Count <= selectedIndex + 1) return;
-            this.Mods.Move(selectedIndex, selectedIndex + 1);
+            if (selectedIndex <= 0 || this.Enabled.Count <= selectedIndex + 1) return;
+            this.Enabled.Move(selectedIndex, selectedIndex + 1);
         }
 
         public void MoveToBottom(int selectedIndex)
         {
-            if (selectedIndex <= 0 || this.Mods.Count <= selectedIndex + 1) return;
-            this.Mods.Move(selectedIndex, this.Mods.Count - 1);
+            if (selectedIndex <= 0 || this.Enabled.Count <= selectedIndex + 1) return;
+            this.Enabled.Move(selectedIndex, this.Enabled.Count - 1);
         }
 
         public void CheckAll()
@@ -201,13 +192,13 @@ namespace Paradox.Common
         {
             try
             {
-                var sorted1 = this.Mods.TopologicalSort(x => x.Dependencies?.Select(d => this.Mods.FirstOrDefault(y => string.Equals(y.Name, d, StringComparison.OrdinalIgnoreCase))).Where(m => m != null) ?? Enumerable.Empty<ModData>()).ToArray();
-                this.Mods.Clear();
-                foreach (var entry in sorted1) this.Mods.Add(entry);
+                var sorted1 = this.Enabled.TopologicalSort(x => x.ModDefinitionFile.Dependencies?.Select(d => this.Enabled.FirstOrDefault(y => string.Equals(y.DisplayName, d, StringComparison.OrdinalIgnoreCase))).Where(m => m != null) ?? Enumerable.Empty<ModEntry>()).ToArray();
+                this.Enabled.Clear();
+                foreach (var entry in sorted1) this.Enabled.Add(entry);
             }
             catch (Exception e)
             {
-                this._logger.Error(e, "TopologicalSort");
+                this.Logger?.Error(e, "TopologicalSort");
             }
         }
     }

@@ -1,13 +1,12 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
-using Avalonia.LogicalTree;
 using Avalonia.Media;
 using MicroCubeAvalonia.IconPack.Icons;
 using System;
 
 namespace MicroCubeAvalonia.IconPack
 {
-    public class IconControl : ContentControl
+    public sealed class IconControl : ContentControl
     {
         public static readonly AvaloniaProperty KindProperty =
             AvaloniaProperty.Register<IconControl, string>(
@@ -24,10 +23,10 @@ namespace MicroCubeAvalonia.IconPack
         public static readonly DirectProperty<IconControl, Geometry> IconDataProperty =
             AvaloniaProperty.RegisterDirect<IconControl, Geometry>(
             "IconData",
-            (ic) =>
-            ic.iconData);
+            ic =>
+            ic._iconData);
 
-        private Geometry iconData;
+        private Geometry _iconData;
 
         /// <summary>
         /// Gets or sets the icon to display.
@@ -47,7 +46,7 @@ namespace MicroCubeAvalonia.IconPack
         /// </summary>
         public object BindableKind
         {
-            get => (object)this.GetValue(BindableKindProperty);
+            get => this.GetValue(BindableKindProperty);
             set
             {
                 this.SetValue(BindableKindProperty, value);
@@ -69,7 +68,7 @@ namespace MicroCubeAvalonia.IconPack
 
             if (this.BindableKind != null)
             {
-                newIconPathData = this.GetPathData(this.BindableKind);
+                newIconPathData = GetPathData(this.BindableKind);
             }
             else if (!string.IsNullOrEmpty(this.Kind))
             {
@@ -77,12 +76,12 @@ namespace MicroCubeAvalonia.IconPack
             }
 
             var newGeometry = Geometry.Parse(newIconPathData);
-            this.SetAndRaise(IconDataProperty, ref this.iconData, newGeometry);
+            this.SetAndRaise(IconDataProperty, ref this._iconData, newGeometry);
         }
 
         private string GetPathData(string iconPath)
         {
-            var iconNameParts = iconPath.Split(new char[] { '.' }, 2);
+            var iconNameParts = iconPath.Split(new[] { '.' }, 2);
             var iconPackName = iconNameParts[0];
             var iconName = iconNameParts[1];
 
@@ -110,7 +109,7 @@ namespace MicroCubeAvalonia.IconPack
             }
         }
 
-        private string GetPathData(object iconKind)
+        private static string GetPathData(object iconKind)
         {
             string data = null;
             switch (iconKind)

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Serilog;
 
-namespace Paradox.Common.Models
+namespace Paradox.Common
 {
     public sealed class SupportedVersion: IComparable<SupportedVersion>, IEquatable<SupportedVersion>
     {
@@ -32,6 +32,9 @@ namespace Paradox.Common.Models
             }
             catch (Exception e)
             {
+                this.Major = 0;
+                this.Minor = 0;
+                this.Patch = 0;
                 this._logger?.Error(e, source);
             }
         }
@@ -103,20 +106,10 @@ namespace Paradox.Common.Models
         {
             return a.CompareTo(b) < 0;
         }
-        
-        public static bool operator ==(SupportedVersion a, SupportedVersion b)
-        {
-            return a.CompareTo(b) == 0;
-        }
-        
-        public static bool operator !=(SupportedVersion a, SupportedVersion b)
-        {
-            return a.CompareTo(b) != 0;
-        }
-        
+       
         public bool Equals(SupportedVersion other)
         {
-            return this.Major == other.Major && this.Minor == other.Minor && this.Patch == other.Patch;
+            return other != null && (this.Major == other.Major && this.Minor == other.Minor && this.Patch == other.Patch);
         }
 
         public override bool Equals(object obj)

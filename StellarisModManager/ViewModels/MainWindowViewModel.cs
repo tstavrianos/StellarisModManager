@@ -1,13 +1,15 @@
-﻿using System.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reactive.Linq;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
+using DynamicData;
 using ReactiveUI;
 using Paradox.Common;
 using Serilog;
-using Paradox.Common.Models;
 using StellarisModManager.Views;
 
 namespace StellarisModManager.ViewModels
@@ -35,7 +37,7 @@ namespace StellarisModManager.ViewModels
             this.Manager = new ModManager(logger);
 
             var moveUp = this.WhenAnyValue(x => x.SelectedIndex).Select(x => x > 0);
-            var moveDown = this.WhenAnyValue(x => x.SelectedIndex).Select(x => x >= 0 && x < this.Manager.Mods.Count - 1);
+            var moveDown = this.WhenAnyValue(x => x.SelectedIndex).Select(x => x >= 0 && x < this.Manager.Enabled.Count - 1);
 
             this.Save = ReactiveCommand.Create(() => this.Manager.Save());
             this.AlphaSort = ReactiveCommand.Create(() => this.Manager.AlphaSort());
@@ -47,6 +49,15 @@ namespace StellarisModManager.ViewModels
             this.CheckAll = ReactiveCommand.Create(() => this.Manager.CheckAll());
             this.UncheckAll = ReactiveCommand.Create(() => this.Manager.UncheckAll());
             this.InvertCheck = ReactiveCommand.Create(() => this.Manager.InvertCheck());
+            try
+            {
+                this._modList.IsVisible = true;
+                this._modList.Items = this.Manager.Enabled;
+            }
+            catch (Exception e)
+            {
+                this._logger.Error(e, "?");
+            }
         }
 
         public void StartDrag(object sender, PointerPressedEventArgs e) => 
@@ -70,10 +81,10 @@ namespace StellarisModManager.ViewModels
             var hoveredItem = (ListBoxItem) this._modList.GetLogicalChildren().FirstOrDefault(x => this._window.GetVisualsAt(e.GetPosition(this._window)).Contains(((IVisual)x).GetVisualChildren().First()));
             if (this._dragItem != null && hoveredItem != null && !Equals(this._dragItem, hoveredItem))
             {
-                var a = this._dragItem.DataContext as ModData;
-                var b = hoveredItem.DataContext as ModData;
-                this.Manager.Mods.Move(this.Manager.Mods.IndexOf(a),
-                    this.Manager.Mods.IndexOf(b));
+                var a = this._dragItem.DataContext as ModEntry;
+                var b = hoveredItem.DataContext as ModEntry;
+                this.Manager.Enabled.Move(this.Manager.Enabled.IndexOf(a),
+                    this.Manager.Enabled.IndexOf(b));
             }
 
             this.ClearDropStyling();
