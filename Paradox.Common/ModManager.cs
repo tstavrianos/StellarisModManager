@@ -4,34 +4,22 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
-using Paradox.Common.Models;
 using Serilog;
-using Serilog.Core;
-using Serilog.Exceptions;
+using Paradox.Common.Models;
 
 namespace Paradox.Common
 {
-    public sealed class ModManager : IDisposable
+    public sealed class ModManager
     {
-        private readonly Logger _logger;
-
         public ObservableCollection<ModData> Mods { get; }
         public string BasePath { get; }
         public string ModPath { get; }
         private readonly SupportedVersion _version;
+        private readonly ILogger _logger;
 
-        public ModManager()
+        public ModManager(ILogger logger = null)
         {
-            this._logger = new LoggerConfiguration()//
-#if DEBUG
-                .MinimumLevel.Debug()//
-                .Enrich.WithExceptionDetails()//
-#else
-                .MinimumLevel.Information()//
-#endif
-                .Enrich.FromLogContext()//
-                .WriteTo.File("mod_manager.log")//
-                .CreateLogger();//
+            this._logger = logger;
             this._version = new SupportedVersion(2, 5, 1);
             this.Mods = new ObservableCollection<ModData>();
             this.BasePath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\\Paradox Interactive\\Stellaris";
@@ -47,9 +35,10 @@ namespace Paradox.Common
 
             foreach (var (guid, entry) in modsRegistry)
             {
+                if(string.IsNullOrWhiteSpace(entry.GameRegistryId)) continue;
                 var modFile = Path.Combine(this.BasePath, entry.GameRegistryId);
                 if (!File.Exists(modFile)) continue;
-                var data = new ModData(modFile, entry);
+                var data = new ModData(modFile, entry, this._logger);
                 data.Outdated = data.SupportedVersion < this._version;
                 data.OriginalSpot = int.MaxValue;
                 this.Mods.Add(data);
@@ -220,11 +209,6 @@ namespace Paradox.Common
             {
                 this._logger.Error(e, "TopologicalSort");
             }
-        }
-
-        public void Dispose()
-        {
-            this._logger.Dispose();
         }
     }
 }

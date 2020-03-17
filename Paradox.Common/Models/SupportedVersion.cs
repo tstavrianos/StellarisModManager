@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Serilog;
 
 namespace Paradox.Common.Models
 {
@@ -10,9 +11,11 @@ namespace Paradox.Common.Models
         public int Minor { get; }
 
         public int Patch { get; }
+        private readonly ILogger _logger;
 
-        public SupportedVersion(string source)
+        public SupportedVersion(string source, ILogger logger = null)
         {
+            this._logger = logger;
             var ver = source.Split('.');
 
             this.Major = int.MaxValue;
@@ -29,7 +32,7 @@ namespace Paradox.Common.Models
             }
             catch (Exception e)
             {
-                ModData.Log.Error(e, source);
+                this._logger?.Error(e, source);
             }
         }
 

@@ -1,33 +1,15 @@
-using ReactiveUI;
 using Serilog;
-using Serilog.Core;
-using Serilog.Exceptions;
-using ParseNode = Paradox.Common.Parsers.pck.ParseNode;
-using Parser = Paradox.Common.Parsers.Parser;
-using Tokenizer = Paradox.Common.Parsers.Tokenizer;
+using ReactiveUI;
 
 namespace Paradox.Common.Models
 {
     public sealed class ModDataFile: ReactiveObject
     {
-        private static readonly Logger Log;
-
-        static ModDataFile()
-        {
-#if DEBUG
-            Log = new LoggerConfiguration()//
-                .MinimumLevel.Debug()//
-                .Enrich.WithExceptionDetails()//
-                .Enrich.FromLogContext()//
-                .WriteTo.File("ModDataFile.log")//
-                .CreateLogger();//
-#endif
-        }
-
         private readonly Parsers.pck.ParseNode _tree;
         private bool _valid;
         private ModData _sourceMod;
         private string _path;
+        private readonly ILogger _logger;
 
         public bool Valid
         {
@@ -50,8 +32,9 @@ namespace Paradox.Common.Models
         public string Directory => System.IO.Path.GetDirectoryName(this.Path);
         public string Filename => System.IO.Path.GetFileName(this.Path);
 
-        internal ModDataFile(string path, ModData sourceModData, string filename)
+        internal ModDataFile(string path, ModData sourceModData, string filename, ILogger logger = null)
         {
+            this._logger = logger;
             this.Path = path;
             this.SourceMod = sourceModData;
 
@@ -63,7 +46,7 @@ namespace Paradox.Common.Models
             if (this._tree.Symbol == "assignmentList" || this._tree.Symbol == "valueList")
                 return;
             this.Valid = false;
-            Log?.Error($"{filename} is not valid");
+            this._logger?.Error($"{filename} is not valid");
         }
     }
 }

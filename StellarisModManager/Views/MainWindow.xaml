@@ -78,13 +78,13 @@
         <ListBox Grid.Column="1" Items="{Binding Path=Manager.Mods}" SelectedIndex="{Binding SelectedIndex}" Name="ModList" BorderThickness="0">
             <ListBox.ItemTemplate>
                 <DataTemplate DataType="core:ModData">
-                    <Grid ColumnDefinitions="auto,*,16,16" RowDefinitions="16" Name="OperationGrid" Margin="0" Background="Transparent">
+                    <Grid ColumnDefinitions="auto,*,16,16" RowDefinitions="16" Name="OperationGrid" Margin="0" Background="Transparent" IsPointerOver="{Binding IsPointerOver, Mode=OneWayToSource}">
                         <Border BorderThickness="1" Grid.Column="0" BorderBrush="{DynamicResource ThemeBorderMidBrush}" Margin="0,0,5,0">
                             <CheckBox Focusable="False" IsChecked="{Binding IsChecked}" VerticalAlignment="Center"></CheckBox>
                         </Border>
                         <TextBlock Focusable="False" Grid.Column="1" Text="{Binding Name}" Margin="5,0" />
                         <iconPack:IconControl Grid.Column="2" Background="Transparent" Foreground="Red" Kind="PackIconFontAwesomeKind.ExclamationTriangleSolid" IsVisible="{Binding Outdated}" ToolTip.Tip="{Binding SupportedVersion}"/>
-                        <iconPack:IconControl Grid.Column="3" Cursor="SizeAll" Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.BarsSolid" IsVisible="{Binding $parent.IsPointerOver}" ToolTip.Tip="Click and drag to move this operation." PointerPressed="StartDrag" PointerReleased="EndDrag" PointerMoved = "DoDrag" />
+                        <iconPack:IconControl Grid.Column="3" Cursor="SizeAll" Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.BarsSolid" IsVisible="{Binding IsPointerOver, Mode=OneWay}" ToolTip.Tip="Click and drag to move this operation." PointerPressed="StartDrag" PointerReleased="EndDrag" PointerMoved = "DoDrag" />
                     </Grid>
                 </DataTemplate>
             </ListBox.ItemTemplate>

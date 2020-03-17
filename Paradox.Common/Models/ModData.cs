@@ -2,14 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-//using Ionic.Zip;
 using Paradox.Common.Json;
 using Paradox.Common.Parsers;
 using Paradox.Common.Parsers.pck;
 using ReactiveUI;
 using Serilog;
-using Serilog.Core;
-using Serilog.Exceptions;
 using Path2 = System.IO.Path;
 
 namespace Paradox.Common.Models
@@ -18,7 +15,6 @@ namespace Paradox.Common.Models
     public sealed class ModData: ReactiveObject
     {
         //private static readonly string[] AllowedExtensions = { ".gfx", ".gui", ".txt", ".asset" };
-        internal static readonly Logger Log;
 
         private static string TrimQuotes(string value)
         {
@@ -26,18 +22,6 @@ namespace Paradox.Common.Models
                 value[^1] != '"') return value;
             return value.Substring(1, value.Length - 2);
         }
-        static ModData()
-        {
-#if DEBUG
-            Log = new LoggerConfiguration()//
-                .MinimumLevel.Debug()//
-                .Enrich.WithExceptionDetails()//
-                .Enrich.FromLogContext()//
-                .WriteTo.File("ModData.log")//
-                .CreateLogger();//
-#endif
-        }
-
         //private readonly ParseNode _tree;
         private string _id;
         private string _name;
@@ -50,11 +34,19 @@ namespace Paradox.Common.Models
         private bool _isChecked;
         private bool _outdated;
         private int _originalSpot;
+        private readonly ILogger _logger;
+        private bool _isPointerOver;
 
         public bool IsChecked
         {
             get => this._isChecked;
             set => this.RaiseAndSetIfChanged(ref this._isChecked, value);
+        }
+
+        public bool IsPointerOver
+        {
+            get => this._isPointerOver;
+            set => this.RaiseAndSetIfChanged(ref this._isPointerOver, value);
         }
 
         public bool Outdated
@@ -166,7 +158,7 @@ namespace Paradox.Common.Models
                         this.Picture = TrimQuotes(child.Children[2].Value);
                         break;
                     case "supported_version" when child.Children[2].Symbol == "STRING":
-                        this.SupportedVersion = new SupportedVersion(TrimQuotes(child.Children[2].Value));
+                        this.SupportedVersion = new SupportedVersion(TrimQuotes(child.Children[2].Value), this._logger);
                         break;
                     case "path" when child.Children[2].Symbol == "STRING":
                         this.Path = TrimQuotes(child.Children[2].Value);
@@ -191,26 +183,27 @@ namespace Paradox.Common.Models
                         break;
                     default:
                         this.Valid = false;
-                        Log?.Error($"{this.Id}: unknown symbol found: {child.Children[0].Value}");
+                        this._logger?.Error($"{this.Id}: unknown symbol found: {child.Children[0].Value}");
                         break;
                 }
             }
             else
             {
                 if(child.Symbol != "assignment")
-                    Log?.Error($"{this.Id}: node is not an assignment");
+                    this._logger?.Error($"{this.Id}: node is not an assignment");
                 if(child.Children.Count == 3 && child.Children[1].Symbol == "OPERATOR" && child.Children[1].Value == "=" && child.Children[0].Symbol == "SYMBOL")
-                    Log?.Error($"{this.Id}: node is not an assignment with three sub-nodes");
+                    this._logger?.Error($"{this.Id}: node is not an assignment with three sub-nodes");
                 this.Valid = false;
             }
         }
 
-        public ModData(string file, ModsRegistryEntry entry = null)
+        public ModData(string file, ModsRegistryEntry entry = null, ILogger logger = null)
         {
             this.Id = Path2.GetFileName(file);
             this.Valid = true;
             this.Tags = new List<string>();
             this.Dependencies = new List<string>();
+            this._logger = logger;
             this.Entry = entry;
             if(!string.IsNullOrWhiteSpace(entry?.DisplayName))
                 this.Name = entry.DisplayName;
@@ -219,7 +212,7 @@ namespace Paradox.Common.Models
             if(entry?.Tags != null)
                 this.Tags.AddRange(entry.Tags);
             if(!string.IsNullOrWhiteSpace(entry?.RequiredVersion))
-                this.SupportedVersion = new SupportedVersion(entry.RequiredVersion);
+                this.SupportedVersion = new SupportedVersion(entry.RequiredVersion, this._logger);
             if(!string.IsNullOrWhiteSpace(entry?.ArchivePath))
                 this.Archive = entry.ArchivePath;
             if(!string.IsNullOrWhiteSpace(entry?.DirPath))
@@ -238,23 +231,23 @@ namespace Paradox.Common.Models
             else
             {
                 this.Valid = false;
-                Log?.Error($"{this.Id} does not begin with an assignment list");
+                this._logger?.Error($"{this.Id} does not begin with an assignment list");
             }
 
             switch (this.SupportedVersion)
             {
                 case null when !string.IsNullOrWhiteSpace(this.Version) && this.Version.Contains(".*"):
-                    this.SupportedVersion = new SupportedVersion(this.Version);
+                    this.SupportedVersion = new SupportedVersion(this.Version, this._logger);
                     break;
                 case null:
-                    this.SupportedVersion = new SupportedVersion("1.0.0");
+                    this.SupportedVersion = new SupportedVersion("1.0.0", this._logger);
                     break;
             }
 
             if (string.IsNullOrWhiteSpace(this.Path) && string.IsNullOrWhiteSpace(this.Archive))
             {
                 this.Valid = false;
-                Log?.Debug($"{this.Id} - Path and Archive are blank");
+                this._logger?.Debug($"{this.Id} - Path and Archive are blank");
             }
 
             if (this.Entry != null) return;
@@ -301,12 +294,12 @@ namespace Paradox.Common.Models
             if (Path2.GetExtension(mPath) == ".zip" && !File.Exists(mPath))
             {
                 this.Valid = false;
-                Log?.Debug($"{this.Id} - Archive does not exist");
+                this._logger?.Debug($"{this.Id} - Archive does not exist");
             }
             else if (Path2.GetExtension(mPath) != ".zip" && !Directory.Exists(mPath))
             {
                 this.Valid = false;
-                Log?.Debug($"{this.Id} - Path does not exist");
+                this._logger?.Debug($"{this.Id} - Path does not exist");
             }
 
             /*if (!this.Valid) return;

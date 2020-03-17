@@ -1,7 +1,9 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Logging;
 using Avalonia.Markup.Xaml;
+using Serilog;
 using StellarisModManager.ViewModels;
 
 namespace StellarisModManager.Views
@@ -16,7 +18,7 @@ namespace StellarisModManager.Views
 #if DEBUG
             this.AttachDevTools();
 #endif
-            this.DataContext = new MainWindowViewModel(this);
+            this.DataContext = new MainWindowViewModel(this, Log.Logger);
         }
 
         public void StartDrag(object sender, PointerPressedEventArgs e) => this.ViewModel.StartDrag(sender, e);
