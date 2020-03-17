@@ -5,7 +5,9 @@ using ReactiveUI;
 
 namespace Paradox.Common
 {
-    public sealed class ModEntry: ReactiveObject
+    using System.Collections.ObjectModel;
+
+    public sealed class ModEntry : ReactiveObject
     {
         private ModDefinitionFile _modDefinitionFile;
         private ModsRegistryEntry _modsRegistryEntry;
@@ -15,6 +17,8 @@ namespace Paradox.Common
         private readonly ModManager _modManager;
         private SupportedVersion _supportedVersion;
         private bool _outdated;
+
+        private ObservableCollection<ModConflict> _modConflicts;
 
         public ModEntry(ModManager modManager)
         {
@@ -28,7 +32,7 @@ namespace Paradox.Common
             {
                 this.RaiseAndSetIfChanged(ref this._modDefinitionFile, value);
                 if (this._modDefinitionFile == null) return;
-                if (this._supportedVersion != null) 
+                if (this._supportedVersion != null)
                     this.Outdated = this._supportedVersion < this._modManager.Version;
                 else if (!string.IsNullOrWhiteSpace(value.SupportedVersion) && Regex.IsMatch(value.SupportedVersion,
                     @"((\d+)|\*)\.((\d+)|\*)\.((\d+)|\*)"))
@@ -59,6 +63,12 @@ namespace Paradox.Common
             set => this.RaiseAndSetIfChanged(ref this._modsRegistryEntry, value);
         }
 
+        public ObservableCollection<ModConflict> ModConflicts
+        {
+            get => this._modConflicts;
+            set => this.RaiseAndSetIfChanged(ref this._modConflicts, value);
+        }
+
         public string DisplayName => this.ModDefinitionFile?.Name;
 
         public bool IsChecked
@@ -76,6 +86,7 @@ namespace Paradox.Common
                     {
                         this._modManager.Enabled.Remove(this);
                     }
+                    this._modManager.Validate();
                 }
                 this.RaiseAndSetIfChanged(ref this._isChecked, value);
             }

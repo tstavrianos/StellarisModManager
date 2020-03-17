@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Reactive.Linq;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
-using DynamicData;
 using ReactiveUI;
 using Paradox.Common;
 using Serilog;
@@ -49,18 +46,9 @@ namespace StellarisModManager.ViewModels
             this.CheckAll = ReactiveCommand.Create(() => this.Manager.CheckAll());
             this.UncheckAll = ReactiveCommand.Create(() => this.Manager.UncheckAll());
             this.InvertCheck = ReactiveCommand.Create(() => this.Manager.InvertCheck());
-            try
-            {
-                this._modList.IsVisible = true;
-                this._modList.Items = this.Manager.Enabled;
-            }
-            catch (Exception e)
-            {
-                this._logger.Error(e, "?");
-            }
         }
 
-        public void StartDrag(object sender, PointerPressedEventArgs e) => 
+        public void StartDrag(object sender, PointerPressedEventArgs e) =>
             this._dragItem = this._modList.GetLogicalChildren().Cast<ListBoxItem>().Single(x => x.IsPointerOver);
 
         public void DoDrag(object sender, PointerEventArgs e)
@@ -68,7 +56,7 @@ namespace StellarisModManager.ViewModels
             if (this._dragItem == null) return;
             var list = this._modList.GetLogicalChildren().ToList();
 
-            var hoveredItem = (ListBoxItem) list.FirstOrDefault(x => this._window.GetVisualsAt(e.GetPosition(this._window)).Contains(((IVisual)x).GetVisualChildren().First()));
+            var hoveredItem = (ListBoxItem)list.FirstOrDefault(x => this._window.GetVisualsAt(e.GetPosition(this._window)).Contains(((IVisual)x).GetVisualChildren().First()));
             var dragItemIndex = list.IndexOf(this._dragItem);
             var hoveredItemIndex = list.IndexOf(hoveredItem);
 
@@ -78,13 +66,15 @@ namespace StellarisModManager.ViewModels
 
         public void EndDrag(object sender, PointerReleasedEventArgs e)
         {
-            var hoveredItem = (ListBoxItem) this._modList.GetLogicalChildren().FirstOrDefault(x => this._window.GetVisualsAt(e.GetPosition(this._window)).Contains(((IVisual)x).GetVisualChildren().First()));
+            var hoveredItem = (ListBoxItem)this._modList.GetLogicalChildren().FirstOrDefault(x => this._window.GetVisualsAt(e.GetPosition(this._window)).Contains(((IVisual)x).GetVisualChildren().First()));
             if (this._dragItem != null && hoveredItem != null && !Equals(this._dragItem, hoveredItem))
             {
                 var a = this._dragItem.DataContext as ModEntry;
                 var b = hoveredItem.DataContext as ModEntry;
                 this.Manager.Enabled.Move(this.Manager.Enabled.IndexOf(a),
                     this.Manager.Enabled.IndexOf(b));
+                this.Manager.Validate();
+
             }
 
             this.ClearDropStyling();
