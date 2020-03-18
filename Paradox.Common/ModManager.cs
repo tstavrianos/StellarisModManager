@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Paradox.Common.Helpers;
 using Splat;
@@ -78,6 +80,130 @@ namespace Paradox.Common
             this.Loaded = true;
             this._runValidation = true;
             this.Validate();
+
+            //Task.Run(Do).Wait();            
+        }
+        
+        public class Tag
+        {
+            public string tag { get; set; }
+        }
+
+        public class Publishedfiledetail
+        {
+            public string publishedfileid { get; set; }
+            public int result { get; set; }
+            public string creator { get; set; }
+            public int creator_app_id { get; set; }
+            public int consumer_app_id { get; set; }
+            public string filename { get; set; }
+            public int file_size { get; set; }
+            public string file_url { get; set; }
+            public string hcontent_file { get; set; }
+            public string preview_url { get; set; }
+            public string hcontent_preview { get; set; }
+            public string title { get; set; }
+            public string description { get; set; }
+            public int time_created { get; set; }
+            public int time_updated { get; set; }
+            public int visibility { get; set; }
+            public bool banned { get; set; }
+            public string ban_reason { get; set; }
+            public int subscriptions { get; set; }
+            public int favorited { get; set; }
+            public int lifetime_subscriptions { get; set; }
+            public int lifetime_favorited { get; set; }
+            public int views { get; set; }
+            public List<Tag> tags { get; set; }
+        }
+
+        public class Response
+        {
+            public int result { get; set; }
+            public int resultcount { get; set; }
+            public List<Publishedfiledetail> publishedfiledetails { get; set; }
+        }
+
+        public class GetPublishedFileDetailsResponse
+        {
+            public Response response { get; set; }
+        }
+        
+        public static async Task<GetPublishedFileDetailsResponse> GetPublishedFileDetailsAsync(HttpClient webClient, string fileId) => await GetPublishedFileDetailsAsync(webClient, new List<string>() { fileId });
+
+        public class Cache {
+            public List<CacheFileDetail> FileDetails = new List<CacheFileDetail>();
+        }
+        public class CacheFileDetail : Publishedfiledetail {
+            public DateTime lastFetched { get; set; }
+            public static CacheFileDetail FromPublishedfiledetail(Publishedfiledetail publishedfiledetail)
+            {
+                var fdstr = JsonConvert.SerializeObject(publishedfiledetail);
+                var res = JsonConvert.DeserializeObject<CacheFileDetail>(fdstr);
+                res.lastFetched = DateTime.Now;
+                return res;
+            }
+        }
+        private static FileInfo cacheFile = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory).CombineFile("steam.cache.json");
+        private static Cache cache;
+        private static void CheckCache()
+        {
+            if (cache is null) {
+                if (cacheFile.Exists) {
+                    try { cache = JsonConvert.DeserializeObject<Cache>(File.ReadAllText(cacheFile.FullName));
+                    } catch (Exception ex) {
+                        Console.WriteLine($"[ERROR] [Steam] Unable to load cache ({ex.Message}), starting over...");
+                        cache = new Cache();
+                    }
+                } else {
+                    cache = new Cache();
+                }
+            }
+        }
+
+        public static async Task<GetPublishedFileDetailsResponse> GetPublishedFileDetailsAsync(HttpClient webClient, List<string> fileIds)
+        {
+            var parsedResponse = new GetPublishedFileDetailsResponse();
+            if (fileIds.Count < 1) return parsedResponse;
+            CheckCache();
+            if (cacheFile.Exists && (!cacheFile.LastWriteTime.ExpiredSince(10))) {
+                foreach (var fileId in fileIds) {
+                    var item = cache.FileDetails.FirstOrDefault(x => x.publishedfileid == fileId);
+                    if (item != null) parsedResponse.response.publishedfiledetails.Add(item);
+                }
+                if (parsedResponse.response.publishedfiledetails.Count >= fileIds.Count)
+                    return parsedResponse;
+            }
+            var values = new Dictionary<string, string> { { "itemcount", fileIds.Count.ToString() } };
+            for (int i = 0; i < fileIds.Count; i++) {
+                values.Add($"publishedfileids[{i}]", fileIds[i].ToString() );
+            }
+            var content = new FormUrlEncodedContent(values);
+            var url = new Uri("https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/");
+            //Console.WriteLine($"[Steam] POST to {url} with payload {content.ToJson(false)} and values {values.ToJson(false)}");
+            var response = await webClient.PostAsync(url, content);
+            var responseString = await response.Content.ReadAsStringAsync();
+            try { parsedResponse = JsonConvert.DeserializeObject<GetPublishedFileDetailsResponse>(responseString); }
+            catch (Exception ex) { Console.WriteLine($"[Steam] Could not deserialize response ({ex.Message})\n{responseString}"); } // {response.ReasonPhrase} ({response.StatusCode})\n
+
+            foreach (var item in parsedResponse.response.publishedfiledetails) {
+                cache.FileDetails.RemoveAll(x => x.publishedfileid == item.publishedfileid);
+                cache.FileDetails.Add(CacheFileDetail.FromPublishedfiledetail(item));
+            }
+            File.WriteAllText(cacheFile.FullName, JsonConvert.SerializeObject(cache));
+            return parsedResponse;
+        }
+
+        private async Task Do()
+        {
+            var client = new HttpClient();
+            
+            var ids = this.Mods.Where(x => !string.IsNullOrWhiteSpace(x.ModDefinitionFile?.RemoteFileId) && ulong.TryParse(x.ModDefinitionFile.RemoteFileId, out var _)).Select(x => x.ModDefinitionFile.RemoteFileId).ToList();
+            var t = await GetPublishedFileDetailsAsync(client, ids);
+            foreach (var t1 in t.response.publishedfiledetails)
+            {
+                this.Log().Debug(t1.title);
+            }
         }
 
         private static T LoadJson<T>(string file, Action<T> found, Func<T> notFound)

@@ -2,6 +2,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace Paradox.Common
 {
@@ -13,6 +16,21 @@ namespace Paradox.Common
             {
                 action(obj);
             }
+        }
+
+        public static string ToJson(this object obj, bool indented = true) {
+            return JsonConvert.SerializeObject(obj, (indented ? Formatting.Indented : Formatting.None), new JsonConverter[] { new StringEnumConverter() });
+        }
+        public static bool ExpiredSince(this DateTime dateTime, int minutes)
+        {
+            return (dateTime - DateTime.Now).TotalMinutes < minutes;
+        }
+        public static FileInfo CombineFile(this DirectoryInfo dir, params string[] paths) {
+            var final = dir.FullName;
+            foreach (var path in paths) {
+                final = Path.Combine(final, path);
+            }
+            return new FileInfo(final);
         }
 
         public static string StringJoin(this IEnumerable<object> enumerable, string separator = ", ")
