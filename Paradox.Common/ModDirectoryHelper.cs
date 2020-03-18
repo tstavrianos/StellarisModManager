@@ -2,16 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Ionic.Zip;
 using Newtonsoft.Json;
 using Splat;
+using Ionic.Zip;
 
 namespace Paradox.Common
 {
     /// <summary>
     /// Helper methods for working with mods and getting the mod files into a state where they can be used by the rest of the parser system whether they are in folders or zipped. 
     /// </summary>
-    public sealed class ModDirectoryHelper: IEnableLogger
+    public sealed class ModDirectoryHelper : IEnableLogger
     {
         /// <summary>
         /// Load details of all mods that have been registered with Stellaris.  All mods listed in the game launcher have entries in Stellaris user data directory that can be parsed.

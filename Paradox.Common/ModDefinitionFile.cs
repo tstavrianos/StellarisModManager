@@ -2,40 +2,41 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using ICSharpCode.SharpZipLib.Zip;
 using Path2 = System.IO.Path;
+using Ionic.Zip;
 
 namespace Paradox.Common
 {
     /// <summary>
     /// Accessor for Stellaris Mod Definition files
     /// </summary>
-    public sealed class ModDefinitionFile {
+    public sealed class ModDefinitionFile
+    {
         private readonly string _stellarisDataPath;
         private readonly CwNode _node;
-        
+
         /// <summary>
         /// Get the full path to the mod definition file
         /// </summary>
         public string ModDefinitionFilePath { get; }
-        
+
         /// <summary>
         /// Get the Mods name
         /// </summary>
         public string Name => this._node.GetKeyValue("name");
-        
+
         /// <summary>
         /// Get the path to the mod archive for steam workshop mods.  This may be <c>null</c> if the mod is an extracted folder (e.g. created using the launcher) in which case you should use <see cref="Path"/>
         /// </summary>
         public string Archive => this._node.GetKeyValue("archive");
-        
+
         /// <summary>
         /// Get the path to the mod directory for local mods.  This may be <c>null</c> if the mod is an archive (e.g. steam workshop mod) in which case you should use <see cref="Archive"/>
         /// </summary>
         public string Path => this._node.GetKeyValue("path") != null ? System.IO.Path.Combine(this._stellarisDataPath, this._node.GetKeyValue("path")) : null;
 
         public IList<string> Tags => this._node.GetNode("tags")?.Values;
-        
+
         public IList<string> Dependencies => this._node.GetNode("dependencies")?.Values;
 
         public string Picture => this._node.GetKeyValue("picture");
@@ -49,10 +50,11 @@ namespace Paradox.Common
         public string ReplacePath => this._node.GetKeyValue("replace_path");
 
         public string Key => $"mod/{System.IO.Path.GetFileName(this.ModDefinitionFilePath)}";
-        
+
         public IEnumerable<string> ModifiedFiles { get; }
 
-        internal ModDefinitionFile(string modDefinitionFilePath, string stellarisDataPath, CwNode node) {
+        internal ModDefinitionFile(string modDefinitionFilePath, string stellarisDataPath, CwNode node)
+        {
             this.ModDefinitionFilePath = modDefinitionFilePath;
             this._stellarisDataPath = stellarisDataPath;
             this._node = node;
@@ -67,16 +69,20 @@ namespace Paradox.Common
             if (Path2.GetExtension(mPath) == ".zip")
             {
                 if (!File.Exists(mPath)) return ret;
-                var zipFile = new ZipFile(mPath);
 
-                foreach (var item in zipFile.OfType<ZipEntry>())
+                using var zipFile = ZipFile.Read(new FileInfo(mPath).FullName);
+                foreach (var item in zipFile.Entries)
                 {
-                    if (string.Compare(item.Name, "descriptor.mod", StringComparison.OrdinalIgnoreCase) == 0)
+                    if (item.IsDirectory) continue;
+                    var name = item.FileName;
+                    name = name.Replace('\\', '/');
+                    if (name.Length > 0 && name[0] == '/') name = name.Substring(1);
+                    if (string.Compare(name, "descriptor.mod", StringComparison.OrdinalIgnoreCase) == 0)
                     {
                         continue;
                     }
 
-                    ret.Add(item.Name.Replace('\\', '/'));
+                    ret.Add(name);
                 }
             }
             else
