@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using System.Reactive.Linq;
+using System.Windows.Input;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
@@ -86,15 +87,15 @@ namespace StellarisModManager.ViewModels
             }
         }
 
-        public IReactiveCommand Save { get; }
-        public IReactiveCommand AlphaSort { get; }
-        public IReactiveCommand ReverseOrder { get; }
-        public IReactiveCommand MoveToTop { get; }
-        public IReactiveCommand MoveUp { get; }
-        public IReactiveCommand MoveDown { get; }
-        public IReactiveCommand MoveToBottom { get; }
-        public IReactiveCommand CheckAll { get; }
-        public IReactiveCommand UncheckAll { get; }
-        public IReactiveCommand InvertCheck { get; }
+        public ICommand Save { get; }
+        public ICommand AlphaSort { get; }
+        public ICommand ReverseOrder { get; }
+        public ICommand MoveToTop { get; }
+        public ICommand MoveUp { get; }
+        public ICommand MoveDown { get; }
+        public ICommand MoveToBottom { get; }
+        public ICommand CheckAll { get; }
+        public ICommand UncheckAll { get; }
+        public ICommand InvertCheck { get; }
     }
 }

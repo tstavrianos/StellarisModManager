@@ -1,4 +1,9 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using ICSharpCode.SharpZipLib.Zip;
+using Path2 = System.IO.Path;
 
 namespace Paradox.Common
 {
@@ -44,11 +49,51 @@ namespace Paradox.Common
         public string ReplacePath => this._node.GetKeyValue("replace_path");
 
         public string Key => $"mod/{System.IO.Path.GetFileName(this.ModDefinitionFilePath)}";
+        
+        public IEnumerable<string> ModifiedFiles { get; }
 
         internal ModDefinitionFile(string modDefinitionFilePath, string stellarisDataPath, CwNode node) {
             this.ModDefinitionFilePath = modDefinitionFilePath;
             this._stellarisDataPath = stellarisDataPath;
             this._node = node;
+            this.ModifiedFiles = this.LoadFiles(Path2.GetDirectoryName(Path2.GetDirectoryName(modDefinitionFilePath)));
+        }
+
+        private IEnumerable<string> LoadFiles(string basePath)
+        {
+            var ret = new List<string>();
+            var mPath = Path2.Combine(basePath, this.Archive ?? this.Path);
+
+            if (Path2.GetExtension(mPath) == ".zip")
+            {
+                if (!File.Exists(mPath)) return ret;
+                var zipFile = new ZipFile(mPath);
+
+                foreach (var item in zipFile.OfType<ZipEntry>())
+                {
+                    if (string.Compare(item.Name, "descriptor.mod", StringComparison.OrdinalIgnoreCase) == 0)
+                    {
+                        continue;
+                    }
+
+                    ret.Add(item.Name.Replace('\\', '/'));
+                }
+            }
+            else
+            {
+                mPath += Path2.DirectorySeparatorChar;
+                if (!Directory.Exists(mPath)) return ret;
+                var paths = Directory.EnumerateFiles(mPath, "*.*", SearchOption.AllDirectories);
+                foreach (var path in paths)
+                {
+                    if (string.Compare(Path2.GetFileName(path), "descriptor.mod", StringComparison.OrdinalIgnoreCase) ==
+                        0) continue;
+                    var refPath = Uri.UnescapeDataString(new Uri(mPath).MakeRelativeUri(new Uri(path)).OriginalString);
+                    ret.Add(refPath.Replace('\\', '/'));
+                }
+            }
+
+            return ret;
         }
     }
 }

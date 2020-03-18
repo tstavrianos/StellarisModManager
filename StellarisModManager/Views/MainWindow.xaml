@@ -19,6 +19,7 @@
                     <TextBlock Focusable="False" Text="Invert"/>
                 </StackPanel>
             </Button>
+            <TextBlock Height="5"/>
             <Button Name="Save" HorizontalContentAlignment="Left" Command="{Binding Save}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
                     <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SaveSolid" Width="16" Height="16"/>
@@ -51,6 +52,7 @@
                     <TextBlock Focusable="False" Text="To Bottom"/>
                 </StackPanel>
             </Button>
+            <TextBlock Height="5"/>
             <Button Name="AlphaSort" HorizontalContentAlignment="Left" Command="{Binding AlphaSort}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
                     <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SortAlphaDownSolid" Width="16" Height="16"/>
@@ -83,8 +85,8 @@
             <ListBox Grid.Column="2" Items="{Binding Manager.Enabled}" SelectedIndex="{Binding SelectedIndex}" Name="ModList" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Visible" ScrollViewer.VerticalScrollBarVisibility="Visible">
                 <ListBox.ItemTemplate>
                     <DataTemplate DataType="common:ModEntry">
-                        <Grid ColumnDefinitions="*,auto,16" RowDefinitions="16" Name="OperationGrid" Margin="0" Background="Transparent">
-                            <TextBlock Focusable="False" Grid.Column="0" Text="{Binding DisplayName}" Margin="5,0"/>
+                        <Grid ColumnDefinitions="*,auto,auto,16" RowDefinitions="16" Name="OperationGrid" Margin="0" Background="Transparent">
+                            <TextBlock Focusable="False" Grid.Column="0" Text="{Binding DisplayName}" Margin="5,0" ToolTip.Tip="{Binding ModDefinitionFile.RemoteFileId}"/>
                             <ItemsControl Items="{Binding ModConflicts}" Grid.Column="1">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
@@ -92,8 +94,8 @@
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="common:ModConflict">
-                                        <StackPanel>
+                                    <DataTemplate DataType="common:LoadOrderConflict">
+                                        <StackPanel Orientation="Horizontal">
                                             <iconPack:IconControl Width="16" Height="16" Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SortUpSolid" IsVisible="{Binding IsUp}" ToolTip.Tip="{Binding DependsOn}"/>
                                             <iconPack:IconControl Width="16" Height="16" Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SortDownSolid" IsVisible="{Binding IsDown}" ToolTip.Tip="{Binding DependsOn}"/>
                                             <iconPack:IconControl Width="16" Height="16" Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.ExclamationCircleSolid" IsVisible="{Binding IsMissing}" ToolTip.Tip="{Binding DependsOn}"/>
@@ -101,7 +103,12 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
-                            <iconPack:IconControl Grid.Column="2" Cursor="SizeAll" Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.BarsSolid" IsVisible="{Binding $parent.IsPointerOver}" ToolTip.Tip="Click and drag to move this operation." PointerPressed="StartDrag" PointerReleased="EndDrag" PointerMoved="DoDrag"/>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                <iconPack:IconControl Width="16" Height="16" Focusable="False" Background="Transparent" Foreground="Green" Kind="PackIconMaterialKind.FileUpload" IsVisible="{Binding OverwritesOthers}" ToolTip.Tip="Overwrites files from earlier mods"/>
+                                <iconPack:IconControl Width="16" Height="16" Focusable="False" Background="Transparent" Foreground="Red" Kind="PackIconMaterialKind.FileDownload" IsVisible="{Binding OverwrittenByOthers}" ToolTip.Tip="Some files are getting overwritten by later mods"/>
+                                <iconPack:IconControl Width="16" Height="16" Focusable="False" Background="Transparent" Foreground="Gray" Kind="PackIconMaterialKind.FileCancel" IsVisible="{Binding AllFilesOverwritten}" ToolTip.Tip="All files are getting overwritten by later mods"/>
+                            </StackPanel>
+                            <iconPack:IconControl Grid.Column="3" Cursor="SizeAll" Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.BarsSolid" IsVisible="{Binding $parent.IsPointerOver}" ToolTip.Tip="Click and drag to move this operation." PointerPressed="StartDrag" PointerReleased="EndDrag" PointerMoved="DoDrag"/>
                         </Grid>
                     </DataTemplate>
                 </ListBox.ItemTemplate>

@@ -2,15 +2,25 @@
 
 namespace Paradox.Common
 {
-    public sealed class ModConflict : ReactiveObject
+    public sealed class LoadOrderConflict : ReactiveObject
     {
-        private string _dependsOn;
+        private string _dependsOnId;
 
-        public string DependsOn
+        public string DependsOnId
         {
-            get => this._dependsOn;
-            set => this.RaiseAndSetIfChanged(ref this._dependsOn, value);
+            get => this._dependsOnId;
+            set => this.RaiseAndSetIfChanged(ref this._dependsOnId, value);
         }
+
+        private string _dependsOnName;
+
+        public string DependsOnName
+        {
+            get => this._dependsOnName;
+            set => this.RaiseAndSetIfChanged(ref this._dependsOnName, value);
+        }
+
+        public string DependsOn => this.DependsOnName ?? this.DependsOnId;
 
         private bool _isUp;
 

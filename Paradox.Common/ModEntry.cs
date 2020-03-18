@@ -1,11 +1,12 @@
 using System.Text.RegularExpressions;
+using Paradox.Common.Helpers;
 using Paradox.Common.Json;
 using ReactiveUI;
 using Splat;
+using System.Collections.ObjectModel;
 
 namespace Paradox.Common
 {
-    using System.Collections.ObjectModel;
 
     public sealed class ModEntry : ReactiveObject
     {
@@ -17,8 +18,12 @@ namespace Paradox.Common
         private readonly ModManager _modManager;
         private SupportedVersion _supportedVersion;
         private bool _outdated;
-
-        private ObservableCollection<ModConflict> _modConflicts;
+        private ObservableCollection<LoadOrderConflict> _modConflicts;
+        private ObservableHashSet<string> _idDependencies;
+        private ObservableHashSet<string> _nameDependencies;
+        private bool _overwritesOthers;
+        private bool _overwrittenByOthers;
+        private bool _allFilesOverwritten;
 
         public ModEntry(ModManager modManager)
         {
@@ -28,31 +33,7 @@ namespace Paradox.Common
         public ModDefinitionFile ModDefinitionFile
         {
             get => this._modDefinitionFile;
-            set
-            {
-                this.RaiseAndSetIfChanged(ref this._modDefinitionFile, value);
-                if (this._modDefinitionFile == null) return;
-                if (this._supportedVersion != null)
-                    this.Outdated = this._supportedVersion < this._modManager.Version;
-                else if (!string.IsNullOrWhiteSpace(value.SupportedVersion) && Regex.IsMatch(value.SupportedVersion,
-                    @"((\d+)|\*)\.((\d+)|\*)\.((\d+)|\*)"))
-                {
-                    this._supportedVersion = new SupportedVersion(value.SupportedVersion);
-                    this.Outdated = this._supportedVersion < this._modManager.Version;
-                }
-                else if (!string.IsNullOrWhiteSpace(value.Version) && Regex.IsMatch(value.Version,
-                    @"((\d+)|\*)\.((\d+)|\*)\.((\d+)|\*)"))
-                {
-                    this._supportedVersion = new SupportedVersion(value.Version);
-                    this.Outdated = this._supportedVersion < this._modManager.Version;
-                }
-                else
-                {
-                    this.Log().Error($"{this._modDefinitionFile.ModDefinitionFilePath} - Invalid supported_version");
-                    this._supportedVersion = new SupportedVersion(0, 0, 0);
-                    this.Outdated = true;
-                }
-            }
+            set => this.RaiseAndSetIfChanged(ref this._modDefinitionFile, value);
         }
 
         public ModsRegistryEntry ModsRegistryEntry
@@ -61,7 +42,7 @@ namespace Paradox.Common
             set => this.RaiseAndSetIfChanged(ref this._modsRegistryEntry, value);
         }
 
-        public ObservableCollection<ModConflict> ModConflicts
+        public ObservableCollection<LoadOrderConflict> ModConflicts
         {
             get => this._modConflicts;
             set => this.RaiseAndSetIfChanged(ref this._modConflicts, value);
@@ -106,6 +87,59 @@ namespace Paradox.Common
         {
             get => this._outdated;
             set => this.RaiseAndSetIfChanged(ref this._outdated, value);
+        }
+
+        public ObservableHashSet<string> IdDependencies
+        {
+            get => this._idDependencies;
+            set => this.RaiseAndSetIfChanged(ref this._idDependencies, value);
+        }
+
+        public ObservableHashSet<string> NameDependencies
+        {
+            get => this._nameDependencies;
+            set => this.RaiseAndSetIfChanged(ref this._nameDependencies, value);
+        }
+
+        public bool OverwritesOthers
+        {
+            get => this._overwritesOthers;
+            set => this.RaiseAndSetIfChanged(ref this._overwritesOthers , value);
+        }
+
+        public bool OverwrittenByOthers
+        {
+            get => this._overwrittenByOthers;
+            set => this.RaiseAndSetIfChanged(ref this._overwrittenByOthers , value);
+        }
+
+        public bool AllFilesOverwritten
+        {
+            get => this._allFilesOverwritten;
+            set => this.RaiseAndSetIfChanged(ref this._allFilesOverwritten , value);
+        }
+
+ 
+        public void FillSupportedVersion()
+        {
+            if (!string.IsNullOrWhiteSpace(this.ModDefinitionFile.SupportedVersion) && Regex.IsMatch(this.ModDefinitionFile.SupportedVersion,
+                @"((\d+)|\*)\.((\d+)|\*)\.((\d+)|\*)"))
+            {
+                this._supportedVersion = new SupportedVersion(this.ModDefinitionFile.SupportedVersion);
+                this.Outdated = this._supportedVersion < this._modManager.Version;
+            }
+            else if (!string.IsNullOrWhiteSpace(this.ModDefinitionFile.Version) && Regex.IsMatch(this.ModDefinitionFile.Version,
+                @"((\d+)|\*)\.((\d+)|\*)\.((\d+)|\*)"))
+            {
+                this._supportedVersion = new SupportedVersion(this.ModDefinitionFile.Version);
+                this.Outdated = this._supportedVersion < this._modManager.Version;
+            }
+            else
+            {
+                this.Log().Error($"{this._modDefinitionFile.ModDefinitionFilePath} - Invalid supported_version");
+                this._supportedVersion = new SupportedVersion(0, 0, 0);
+                this.Outdated = true;
+            }
         }
     }
 }

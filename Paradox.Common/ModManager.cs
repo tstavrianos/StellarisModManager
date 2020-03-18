@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
+using Paradox.Common.Helpers;
 using Splat;
 
 namespace Paradox.Common
@@ -12,13 +13,15 @@ namespace Paradox.Common
     {
         public ObservableCollection<ModEntry> Mods { get; } = new ObservableCollection<ModEntry>();
         public ObservableCollection<ModEntry> Enabled { get; } = new ObservableCollection<ModEntry>();
+        private Dictionary<string, string> _fileConflicts;
         public string BasePath { get; }
         public string ModPath { get; }
         internal readonly SupportedVersion Version;
-        internal bool Loaded;
+        internal readonly bool Loaded;
 
         public ModManager()
         {
+            this._fileConflicts = new Dictionary<string, string>();
             this.Loaded = false;
             this.Version = new SupportedVersion(2, 5, 1);
             this.BasePath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\\Paradox Interactive\\Stellaris";
@@ -36,7 +39,7 @@ namespace Paradox.Common
                 if (string.IsNullOrWhiteSpace(entry.GameRegistryId)) continue;
                 var mod = mods.FirstOrDefault(x => x.Key.Equals(entry.GameRegistryId, StringComparison.OrdinalIgnoreCase));
                 if (mod == null) continue;
-                var modEntry = new ModEntry(this) { ModDefinitionFile = mod, ModsRegistryEntry = entry, OriginalSpot = i++, ModConflicts = new ObservableCollection<ModConflict>() };
+                var modEntry = new ModEntry(this) { ModDefinitionFile = mod, ModsRegistryEntry = entry, OriginalSpot = i++, ModConflicts = new ObservableCollection<LoadOrderConflict>() };
                 this.Mods.Add(modEntry);
             }
 
@@ -46,7 +49,6 @@ namespace Paradox.Common
                     x.ModDefinitionFile.Key.Equals(t, StringComparison.OrdinalIgnoreCase));
                 if (data == null) continue;
                 data.IsChecked = true;
-                this.Enabled.Add(data);
             }
 
             foreach (var t in gameData.ModsOrder)
@@ -56,6 +58,19 @@ namespace Paradox.Common
                 if (data == null) continue;
                 if (data.IsChecked == false) continue;
                 this.Enabled.Add(data);
+            }
+
+            foreach (var mod in this.Mods)
+            {
+                mod.FillSupportedVersion();
+                mod.IdDependencies = new ObservableHashSet<string>();
+                mod.NameDependencies = new ObservableHashSet<string>();
+                foreach (var d in mod.ModDefinitionFile.Dependencies ?? Enumerable.Empty<string>())
+                {
+                    var found = this.Mods.FirstOrDefault(x => x.DisplayName == d);
+                    if (found != null) mod.IdDependencies.Add(found.ModDefinitionFile.RemoteFileId);
+                    else mod.NameDependencies.Add(d);
+                }
             }
             this.Loaded = true;
             this.Validate();
@@ -221,7 +236,34 @@ namespace Paradox.Common
             for (var i = 0; i < this.Enabled.Count; i++)
             {
                 var modEntry = this.Enabled[i];
-                foreach (var dependsOn in modEntry.ModDefinitionFile.Dependencies ?? Enumerable.Empty<string>())
+                foreach (var dependsOn in modEntry.IdDependencies)
+                {
+                    var found = this.Enabled.FirstOrDefault(x => x.ModDefinitionFile.RemoteFileId == dependsOn);
+                    var isDown = false;
+                    var isMissing = found == null;
+                    if (found != null)
+                    {
+                        var foundIdx = this.Enabled.IndexOf(found);
+                        if (foundIdx > i)
+                        {
+                            isDown = true;
+                            found.ModConflicts.Add(new LoadOrderConflict { IsUp = true, DependsOnId = dependsOn, DependsOnName = found.DisplayName});
+                        }
+                    }
+
+                    if (!isDown && !isMissing) continue;
+                    var conflict = new LoadOrderConflict
+                    {
+                        IsUp = false,
+                        IsDown = isDown,
+                        IsMissing = isMissing,
+                        DependsOnId = dependsOn,
+                        DependsOnName = found?.DisplayName
+                    };
+                    modEntry.ModConflicts.Add(conflict);
+                }
+                
+                foreach (var dependsOn in modEntry.NameDependencies)
                 {
                     var found = this.Enabled.FirstOrDefault(x => x.DisplayName == dependsOn);
                     var isDown = false;
@@ -232,19 +274,64 @@ namespace Paradox.Common
                         if (foundIdx > i)
                         {
                             isDown = true;
-                            found.ModConflicts.Add(new ModConflict { IsUp = true, DependsOn = modEntry.DisplayName });
+                            if(found.ModConflicts.All(x => x.DependsOnName != dependsOn && x.DependsOnId != found.ModDefinitionFile.RemoteFileId))
+                                found.ModConflicts.Add(new LoadOrderConflict { IsUp = true, DependsOnId = found.ModDefinitionFile.RemoteFileId, DependsOnName = dependsOn});
                         }
                     }
 
                     if (!isDown && !isMissing) continue;
-                    var conflict = new ModConflict
+                    var conflict = new LoadOrderConflict
                     {
                         IsUp = false,
                         IsDown = isDown,
                         IsMissing = isMissing,
-                        DependsOn = dependsOn
+                        DependsOnId = found?.ModDefinitionFile.RemoteFileId,
+                        DependsOnName = dependsOn
                     };
-                    modEntry.ModConflicts.Add(conflict);
+                    if(!modEntry.ModConflicts.Any(x => x.DependsOnName == conflict.DependsOnName || (!string.IsNullOrEmpty(conflict.DependsOnId) && x.DependsOnId != conflict.DependsOnId)))
+                        modEntry.ModConflicts.Add(conflict);
+                }
+            }
+
+            this.ComputeConflicts();
+        }
+
+        private void ComputeConflicts()
+        {   
+            this._fileConflicts.Clear();
+
+            for(var i = 0; i < this.Enabled.Count - 1; i++)
+            {
+                var mod1 = this.Enabled[i];
+                for (var j = i + 1; j < this.Enabled.Count; j++)
+                {
+                    var mod2 = this.Enabled[j];
+                    this.AddModFileConflict(mod1, mod2);
+                }
+            }
+
+            foreach (var mod in this.Enabled)
+            {
+                mod.OverwrittenByOthers = this._fileConflicts.Any(x =>
+                    mod.ModDefinitionFile.ModifiedFiles.Contains(x.Key) &&
+                    x.Value != mod.ModDefinitionFile.RemoteFileId);
+                
+                mod.OverwritesOthers = this._fileConflicts.Any(x =>
+                    mod.ModDefinitionFile.ModifiedFiles.Contains(x.Key) &&
+                    x.Value == mod.ModDefinitionFile.RemoteFileId);
+
+                mod.AllFilesOverwritten = mod.ModDefinitionFile.ModifiedFiles.All(x =>
+                    this._fileConflicts.TryGetValue(x, out var mod2) && mod2 != mod.ModDefinitionFile.RemoteFileId);
+            }
+        }
+
+        private void AddModFileConflict(ModEntry mod1, ModEntry mod2)
+        {
+            foreach (var file in mod1.ModDefinitionFile.ModifiedFiles)
+            {
+                if (mod2.ModDefinitionFile.ModifiedFiles.Contains(file, StringComparer.OrdinalIgnoreCase))
+                {
+                    this._fileConflicts[file] = mod2.ModDefinitionFile.RemoteFileId;
                 }
             }
         }

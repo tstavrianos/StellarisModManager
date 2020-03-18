@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace Paradox.Common
@@ -153,36 +154,75 @@ namespace Paradox.Common
             return new ChainedComparer<T>(comparator, new FunctionComparer<T>(thenComparing));
         }
 
-        private class ChainedComparer<T> : IComparer<T>
+        private sealed class ChainedComparer<T> : IComparer<T>
         {
-            private readonly IComparer<T> comp1;
-            private readonly IComparer<T> comp2;
+            private readonly IComparer<T> _comp1;
+            private readonly IComparer<T> _comp2;
 
             internal ChainedComparer(IComparer<T> comp1, IComparer<T> comp2)
             {
-                this.comp1 = comp1;
-                this.comp2 = comp2;
+                this._comp1 = comp1;
+                this._comp2 = comp2;
             }
             public int Compare(T x, T y)
             {
-                var compare = comp1.Compare(x, y);
-                return compare == 0 ? comp2.Compare(x, y) : compare;
+                var compare = this._comp1.Compare(x, y);
+                return compare == 0 ? this._comp2.Compare(x, y) : compare;
             }
         }
 
-        private class FunctionComparer<T> : IComparer<T>
+        private sealed class FunctionComparer<T> : IComparer<T>
         {
-            private readonly Func<T, IComparable> func;
+            private readonly Func<T, IComparable> _func;
 
             internal FunctionComparer(Func<T, IComparable> func)
             {
-                this.func = func;
+                this._func = func;
             }
             public int Compare(T x, T y)
             {
-                return func(x).CompareTo(func(y));
+                return this._func(x).CompareTo(this._func(y));
             }
         }
 
+        // This provides a useful extension-like method to find the index of and item from IEnumerable<T>
+        // This was based off of the Enumerable.Count<T> extension method.
+        /// <summary>
+        /// Returns the index of an item in a sequence.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements of source.</typeparam>
+        /// <param name="source">A sequence containing elements.</param>
+        /// <param name="item">The item to locate.</param>
+        /// <param name="itemComparer">The item equality comparer to use.  Pass null to use the default comparer.</param>
+        /// <returns>The index of the entry if it was found in the sequence; otherwise, -1.</returns>
+        public static int IndexOf<TSource>(this IEnumerable<TSource> source, TSource item,
+	        IEqualityComparer<TSource> itemComparer = null)
+        {
+          switch (source)
+          {
+              case null:
+                  throw new ArgumentNullException(nameof(source));
+              case IList<TSource> listOfT:
+                  return listOfT.IndexOf(item);
+              case IList list:
+                  return list.IndexOf(item);
+          }
+
+          if (itemComparer == null)
+          {
+            itemComparer = EqualityComparer<TSource>.Default;
+          }
+
+          var i = 0;
+          foreach (var possibleItem in source)
+          {
+            if (itemComparer.Equals(item, possibleItem))
+            {
+              return i;
+            }
+            i++;
+          }
+          return -1;
+        }
     }
 }
