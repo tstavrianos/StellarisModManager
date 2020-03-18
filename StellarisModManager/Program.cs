@@ -3,6 +3,8 @@ using Avalonia.Logging.Serilog;
 using Avalonia.ReactiveUI;
 using Serilog;
 using Serilog.Exceptions;
+using Splat;
+using Splat.Serilog;
 
 namespace StellarisModManager
 {
@@ -38,6 +40,7 @@ namespace StellarisModManager
                 .WriteTo.File("app.log") //
                 .CreateLogger();
             SerilogLogger.Initialize(Log.Logger);
+            Locator.CurrentMutable.UseSerilogFullLogger();
         }
     }
 }

@@ -1,14 +1,15 @@
 ﻿using System.Collections.ObjectModel;
 using System;
 using System.Collections.Generic;
-using ModsRegistryEntry = Paradox.Common.Json.ModsRegistryEntry;
 
 namespace Paradox.Common
 {
     internal static class Extensions
     {
-        public static void ForEach<T> (this IEnumerable<T> enumerable, Action<T> action) {
-            foreach (var obj in enumerable) {
+        public static void ForEach<T>(this IEnumerable<T> enumerable, Action<T> action)
+        {
+            foreach (var obj in enumerable)
+            {
                 action(obj);
             }
         }
@@ -19,8 +20,9 @@ namespace Paradox.Common
         }
 
 
-        public static IEnumerable<T> NullToEmpty<T>(this IEnumerable<T> enumerable) {
-            return enumerable ?? new T[]{};
+        public static IEnumerable<T> NullToEmpty<T>(this IEnumerable<T> enumerable)
+        {
+            return enumerable ?? new T[] { };
         }
 
         /// <summary>
@@ -46,8 +48,10 @@ namespace Paradox.Common
         /// <typeparam name="TK">The key type</typeparam>
         /// <typeparam name="TV">The value Type</typeparam>
         /// <returns>the current (existing or computed) value associated with the specified key, or null if the computed value is null</returns>
-        public static TV ComputeIfAbsent<TK, TV>(this IDictionary<TK, TV> dictionary, TK key, Func<TK, TV> func) {
-            if (!dictionary.ContainsKey(key)) {
+        public static TV ComputeIfAbsent<TK, TV>(this IDictionary<TK, TV> dictionary, TK key, Func<TK, TV> func)
+        {
+            if (!dictionary.ContainsKey(key))
+            {
                 dictionary[key] = func(key);
             }
 
@@ -62,12 +66,14 @@ namespace Paradox.Common
         /// <typeparam name="TK">The key type</typeparam>
         /// <typeparam name="TV">The value Type</typeparam>
         public static void PutAll<TK, TV>(this IDictionary<TK, TV> dictionary,
-            IEnumerable<KeyValuePair<TK, TV>> toPut) {
-            foreach (var keyValuePair in toPut) {
+            IEnumerable<KeyValuePair<TK, TV>> toPut)
+        {
+            foreach (var keyValuePair in toPut)
+            {
                 dictionary[keyValuePair.Key] = keyValuePair.Value;
             }
         }
-        
+
         internal static void MoveItemUp<T>(this ObservableCollection<T> baseCollection, int selectedIndex)
         {
             //# Check if move is possible
@@ -111,20 +117,23 @@ namespace Paradox.Common
 
             return string.Equals(modsRegistryEntry.DisplayName, modData.Name, StringComparison.OrdinalIgnoreCase);
         }
-        
+
         /// <summary>
         /// Generates an IComparer where the objects will be compared by extracting a single property using the first supplied function, if that returns equal (0) then the next property will be extracted and compared etc.    
         /// </summary>
         /// <remarks>
         /// Based off javas Comparator.comparing(Function).  Why does this not exist in c#?
         /// </remarks>
-        public static IComparer<T> Create<T>(params Func<T, IComparable>[] keyFunctions) {
+        public static IComparer<T> Create<T>(params Func<T, IComparable>[] keyFunctions)
+        {
             IComparer<T> comparer = new FunctionComparer<T>(keyFunctions[0]);
-            if (keyFunctions.Length == 1) {
+            if (keyFunctions.Length == 1)
+            {
                 return comparer;
             }
 
-            for (int i = 1; i < keyFunctions.Length; i++) {
+            for (int i = 1; i < keyFunctions.Length; i++)
+            {
                 comparer = comparer.ThenComparing(keyFunctions[i]);
             }
 
@@ -139,31 +148,38 @@ namespace Paradox.Common
         /// <remarks>
         /// Based off javas Comparator.thenComparing(Function).  Why does this not exist in c#?
         /// </remarks>
-        public static IComparer<T> ThenComparing<T>(this IComparer<T> comparator, Func<T, IComparable> thenComparing) {
+        public static IComparer<T> ThenComparing<T>(this IComparer<T> comparator, Func<T, IComparable> thenComparing)
+        {
             return new ChainedComparer<T>(comparator, new FunctionComparer<T>(thenComparing));
         }
 
-        private class ChainedComparer<T> : IComparer<T> {
+        private class ChainedComparer<T> : IComparer<T>
+        {
             private readonly IComparer<T> comp1;
             private readonly IComparer<T> comp2;
 
-            internal ChainedComparer(IComparer<T> comp1, IComparer<T> comp2) {
+            internal ChainedComparer(IComparer<T> comp1, IComparer<T> comp2)
+            {
                 this.comp1 = comp1;
                 this.comp2 = comp2;
             }
-            public int Compare(T x, T y) {
+            public int Compare(T x, T y)
+            {
                 var compare = comp1.Compare(x, y);
                 return compare == 0 ? comp2.Compare(x, y) : compare;
             }
-        } 
+        }
 
-        private class FunctionComparer<T> : IComparer<T> {
+        private class FunctionComparer<T> : IComparer<T>
+        {
             private readonly Func<T, IComparable> func;
 
-            internal FunctionComparer(Func<T, IComparable> func) {
+            internal FunctionComparer(Func<T, IComparable> func)
+            {
                 this.func = func;
             }
-            public int Compare(T x, T y) {
+            public int Compare(T x, T y)
+            {
                 return func(x).CompareTo(func(y));
             }
         }

@@ -4,23 +4,25 @@ using System.IO;
 using System.Linq;
 using Ionic.Zip;
 using Newtonsoft.Json;
-using Serilog;
+using Splat;
 
 namespace Paradox.Common
 {
     /// <summary>
     /// Helper methods for working with mods and getting the mod files into a state where they can be used by the rest of the parser system whether they are in folders or zipped. 
     /// </summary>
-    public static class ModDirectoryHelper {
+    public sealed class ModDirectoryHelper: IEnableLogger
+    {
         /// <summary>
         /// Load details of all mods that have been registered with Stellaris.  All mods listed in the game launcher have entries in Stellaris user data directory that can be parsed.
         /// </summary>
         /// <param name="stellarisUserDirectory">The path to the Stellaris User Data Directory.  Usually [Documents Folder]/Paradox Interactive/Stellaris</param>
         /// <returns>A list of <see cref="ModDefinitionFile"/>s, one for each mod descriptor in the users data directory</returns>
-        public static IEnumerable<ModDefinitionFile> LoadModDefinitions(string stellarisUserDirectory, bool continueOnError = false, ILogger logger = null) {
+        public static IEnumerable<ModDefinitionFile> LoadModDefinitions(string stellarisUserDirectory, bool continueOnError = false)
+        {
             var directoryInfo = new DirectoryInfo(Path.Combine(stellarisUserDirectory, "mod"));
             var modfiles = directoryInfo.GetFiles("*.mod");
-            var cwParserHelper = new CwParserHelper(logger);
+            var cwParserHelper = new CwParserHelper();
             var modFiles = cwParserHelper.ParseParadoxFiles(modfiles.Select(x => x.FullName), continueOnError);
             return modFiles.Select(x => new ModDefinitionFile(x.Key, stellarisUserDirectory, x.Value)).ToList();
         }
@@ -30,7 +32,8 @@ namespace Paradox.Common
         /// </summary>
         /// <param name="modInfoFilePath">Full path to write the mod info file to.</param>
         /// <param name="modFiles">The <see cref="ModDefinitionFile"/>s to write out.</param>
-        public static void WriteModInfoFile(string modInfoFilePath, IEnumerable<ModDefinitionFile> modFiles) {
+        public void WriteModInfoFile(string modInfoFilePath, IEnumerable<ModDefinitionFile> modFiles)
+        {
             var list = modFiles.Select(x => new ModInfo
             {
                 Name = string.Join("_", x.Name.Split(Path.GetInvalidFileNameChars())),
@@ -39,11 +42,9 @@ namespace Paradox.Common
                 ModDirectoryPath = x.Path
             }).ToList();
             list.Sort(Extensions.Create<ModInfo>(x => x.Name));
-            var serializer = new JsonSerializer {Formatting = Formatting.Indented};
-            using (JsonWriter writer = new JsonTextWriter(new StreamWriter(modInfoFilePath)))
-            {
-                serializer.Serialize(writer, list);
-            }
+            var serializer = new JsonSerializer { Formatting = Formatting.Indented };
+            using JsonWriter writer = new JsonTextWriter(new StreamWriter(modInfoFilePath));
+            serializer.Serialize(writer, list);
         }
 
         /// <summary>
@@ -51,12 +52,11 @@ namespace Paradox.Common
         /// </summary>
         /// <param name="modInfoFilePath">Full path to read the mod info file from.</param>
         /// <returns>A <see cref="List{T}"/> of <see cref="ModInfo"/>s</returns>
-        public static List<ModInfo> ReadModInfoFile(string modInfoFilePath) {
+        public List<ModInfo> ReadModInfoFile(string modInfoFilePath)
+        {
             var serializer = new JsonSerializer();
-            using (var file = File.OpenText(modInfoFilePath))
-            {
-                return (List<ModInfo>)serializer.Deserialize(file, typeof(List<ModInfo>));
-            }
+            using var file = File.OpenText(modInfoFilePath);
+            return (List<ModInfo>)serializer.Deserialize(file, typeof(List<ModInfo>));
         }
 
         /// <summary>
@@ -75,65 +75,79 @@ namespace Paradox.Common
         /// <param name="mods">The <see cref="ModInfo"/>s to process</param>
         /// <param name="forceOverride">When extracting a mod from zip, whether to override it if the temp folder already exists.  Defaults to <c>false</c></param>
         /// <returns><see cref="StellarisDirectoryHelper"/>s for the included mods</returns>
-        public static IList<StellarisDirectoryHelper> CreateDirectoryHelpers(IEnumerable<ModInfo> mods, bool forceOverride = false, ILogger logger = null) {
-            return mods.Where(x => x.Include).Select(x => CreateDirectoryHelper(x, forceOverride, logger)).ToList();
+        public IList<StellarisDirectoryHelper> CreateDirectoryHelpers(IEnumerable<ModInfo> mods, bool forceOverride = false)
+        {
+            return mods.Where(x => x.Include).Select(x => this.CreateDirectoryHelper(x, forceOverride)).ToList();
         }
 
-        private static StellarisDirectoryHelper CreateDirectoryHelper(ModInfo modInfo, bool forceOverride = false, ILogger logger = null) {
+        private StellarisDirectoryHelper CreateDirectoryHelper(ModInfo modInfo, bool forceOverride = false)
+        {
             var path = modInfo.ArchiveFilePath ?? modInfo.ModDirectoryPath;
             var modName = modInfo.Name;
             var modGroup = modInfo.ModGroup ?? modName;
-            if (!IsArchiveFile(path) && !IsSteamWorkshopModDirectory(path)) {
+            if (!IsArchiveFile(path) && !IsSteamWorkshopModDirectory(path))
+            {
                 return new StellarisDirectoryHelper(path, modGroup);
             }
 
             FileInfo zipInfo;
             string workshopNumber;
-            if (IsArchiveFile(path)) {
+            if (IsArchiveFile(path))
+            {
                 zipInfo = new FileInfo(path);
                 workshopNumber = zipInfo.Directory.Name;
             }
-            else {
+            else
+            {
                 var directoryInfo = new DirectoryInfo(path);
                 var zipFiles = directoryInfo.GetFiles("*.zip");
-                if (zipFiles.Length > 1) {
+                if (zipFiles.Length > 1)
+                {
                     throw new Exception("Path " + path + " was determined to be a steam workshop file, but contained multiple zip files " + zipFiles.Select(x => x.Name));
                 }
 
                 zipInfo = zipFiles.First();
                 workshopNumber = directoryInfo.Name;
             }
-           
+
             var tempFolder = Path.Combine(Path.GetTempPath(), workshopNumber, modName);
 
-            if (Directory.Exists(tempFolder)) {
-                if (forceOverride) {
+            if (Directory.Exists(tempFolder))
+            {
+                if (forceOverride)
+                {
                     Directory.Delete(tempFolder, true);
                     Directory.CreateDirectory(tempFolder);
-                    try {
+                    try
+                    {
                         ZipFile.Read(zipInfo.FullName).ExtractAll(tempFolder, ExtractExistingFileAction.OverwriteSilently);
                     }
-                    catch (Exception e) {
+                    catch (Exception e)
+                    {
                         throw new Exception("Unable to process: " + zipInfo.FullName, e);
                     }
                 }
-                else {
-                    logger?.Debug("Directory {dir} exists, skipping zip extraction as overwrite is off", tempFolder);
+                else
+                {
+                    this.Log().Debug("Directory {dir} exists, skipping zip extraction as overwrite is off", tempFolder);
                 }
             }
-            else {
+            else
+            {
                 Directory.CreateDirectory(tempFolder);
-                try {
+                try
+                {
                     ZipFile.Read(zipInfo.FullName).ExtractAll(tempFolder, ExtractExistingFileAction.OverwriteSilently);
                 }
-                catch (Exception e) {
+                catch (Exception e)
+                {
                     throw new Exception("Unable to process: " + zipInfo.FullName, e);
                 }
             }
-            
+
             return new StellarisDirectoryHelper(tempFolder, modGroup);
         }
-        
+
         /// <summary>
         /// Given a directory, determine if it is a steam workshop mod directory or an extracted mod directory.
         /// </summary>
@@ -142,32 +156,37 @@ namespace Paradox.Common
         /// <remarks>
         /// This is hardly a perfect check, looking to see if it contains a single file with a .zip extension.
         /// </remarks>
-        public static bool IsSteamWorkshopModDirectory(string path) {
-            if (!File.GetAttributes(path).HasFlag(FileAttributes.Directory)) {
+        public static bool IsSteamWorkshopModDirectory(string path)
+        {
+            if (!File.GetAttributes(path).HasFlag(FileAttributes.Directory))
+            {
                 return false;
             }
             var directoryInfo = new DirectoryInfo(path);
             var zipFiles = directoryInfo.GetFiles("*.zip");
-            if (!zipFiles.Any()) {
+            if (!zipFiles.Any())
+            {
                 return false;
             }
             var files = directoryInfo.GetFiles();
             return zipFiles.Length == files.Length;
         }
-        
+
         /// <summary>
         /// Determine if the given path is to a zip archive.
         /// </summary>
         /// <param name="path">The path</param>
         /// <returns><c>true</c> if the path is to a zip file</returns>
-        public static bool IsArchiveFile(string path) {
-            if (File.GetAttributes(path).HasFlag(FileAttributes.Directory)) {
+        public static bool IsArchiveFile(string path)
+        {
+            if (File.GetAttributes(path).HasFlag(FileAttributes.Directory))
+            {
                 return false;
             }
 
             var fileInfo = new FileInfo(path);
             return fileInfo.Extension.ToLowerInvariant() == ".zip";
         }
-        
+
     }
 }

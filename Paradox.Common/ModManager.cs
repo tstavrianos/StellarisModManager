@@ -3,27 +3,23 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using DynamicData;
-using DynamicData.Annotations;
 using Newtonsoft.Json;
-using Serilog;
+using Splat;
 
 namespace Paradox.Common
 {
-    public sealed class ModManager
+    public sealed class ModManager: IEnableLogger
     {
         public ObservableCollection<ModEntry> Mods { get; } = new ObservableCollection<ModEntry>();
         public ObservableCollection<ModEntry> Enabled { get; } = new ObservableCollection<ModEntry>();
         public string BasePath { get; }
         public string ModPath { get; }
         internal readonly SupportedVersion Version;
-        internal readonly ILogger Logger;
         internal bool Loaded;
 
-        public ModManager(ILogger logger = null)
+        public ModManager()
         {
             this.Loaded = false;
-            this.Logger = logger;
             this.Version = new SupportedVersion(2, 5, 1);
             this.BasePath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\\Paradox Interactive\\Stellaris";
             if (!Directory.Exists(this.BasePath))
@@ -33,7 +29,7 @@ namespace Paradox.Common
             var gameData = LoadJson(Path.Combine(this.BasePath, "game_data.json"), x => { }, () => new Json.GameData { ModsOrder = new List<string>() });
             var dlcLoad = LoadJson(Path.Combine(this.BasePath, "dlc_load.json"), x => { }, () => new Json.DlcLoad { DisabledDlcs = new List<string>(), EnabledMods = new List<string>() });
             var modsRegistry = LoadJson(Path.Combine(this.BasePath, "mods_registry.json"), x => { }, () => new Json.ModsRegistry());
-            var mods = ModDirectoryHelper.LoadModDefinitions(this.BasePath, true, logger);
+            var mods = ModDirectoryHelper.LoadModDefinitions(this.BasePath, true);
             var i = 0;
             foreach (var (guid, entry) in modsRegistry)
             {
@@ -210,7 +206,7 @@ namespace Paradox.Common
             }
             catch (Exception e)
             {
-                this.Logger?.Error(e, "TopologicalSort");
+                this.Log().Error(e, "TopologicalSort");
             }
             this.Validate();
         }
@@ -240,17 +236,15 @@ namespace Paradox.Common
                         }
                     }
 
-                    if (isDown || isMissing)
+                    if (!isDown && !isMissing) continue;
+                    var conflict = new ModConflict
                     {
-                        var conflict = new ModConflict
-                        {
-                            IsUp = false,
-                            IsDown = isDown,
-                            IsMissing = isMissing,
-                            DependsOn = dependsOn
-                        };
-                        modEntry.ModConflicts.Add(conflict);
-                    }
+                        IsUp = false,
+                        IsDown = isDown,
+                        IsMissing = isMissing,
+                        DependsOn = dependsOn
+                    };
+                    modEntry.ModConflicts.Add(conflict);
                 }
             }
         }

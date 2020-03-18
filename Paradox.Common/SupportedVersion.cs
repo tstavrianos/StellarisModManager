@@ -1,21 +1,19 @@
 using System;
 using System.Collections.Generic;
-using Serilog;
+using Splat;
 
 namespace Paradox.Common
 {
-    public sealed class SupportedVersion: IComparable<SupportedVersion>, IEquatable<SupportedVersion>
+    public sealed class SupportedVersion : IComparable<SupportedVersion>, IEquatable<SupportedVersion>, IEnableLogger
     {
         public int Major { get; }
 
         public int Minor { get; }
 
         public int Patch { get; }
-        private readonly ILogger _logger;
 
-        public SupportedVersion(string source, ILogger logger = null)
+        public SupportedVersion(string source)
         {
-            this._logger = logger;
             var ver = source.Split('.');
 
             this.Major = int.MaxValue;
@@ -35,7 +33,7 @@ namespace Paradox.Common
                 this.Major = 0;
                 this.Minor = 0;
                 this.Patch = 0;
-                this._logger?.Error(e, source);
+                this.Log().Error(e, source);
             }
         }
 
@@ -90,7 +88,7 @@ namespace Paradox.Common
         public int CompareTo(SupportedVersion other)
         {
             if (ReferenceEquals(this, other)) return 0;
-            if (ReferenceEquals(null, other)) return 1;
+            if (other is null) return 1;
             var majorComparison = this.Major.CompareTo(other.Major);
             if (majorComparison != 0) return majorComparison;
             var minorComparison = this.Minor.CompareTo(other.Minor);
@@ -106,7 +104,7 @@ namespace Paradox.Common
         {
             return a.CompareTo(b) < 0;
         }
-       
+
         public bool Equals(SupportedVersion other)
         {
             return other != null && (this.Major == other.Major && this.Minor == other.Minor && this.Patch == other.Patch);

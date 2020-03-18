@@ -6,7 +6,6 @@ using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
 using ReactiveUI;
 using Paradox.Common;
-using Serilog;
 using StellarisModManager.Views;
 
 namespace StellarisModManager.ViewModels
@@ -18,7 +17,6 @@ namespace StellarisModManager.ViewModels
         private readonly ListBox _modList;
         private ListBoxItem _dragItem;
         private int _selectedIndex = -1;
-        private readonly ILogger _logger;
 
         public int SelectedIndex
         {
@@ -26,12 +24,11 @@ namespace StellarisModManager.ViewModels
             set => this.RaiseAndSetIfChanged(ref this._selectedIndex, value);
         }
 
-        public MainWindowViewModel(MainWindow window, ILogger logger = null)
+        public MainWindowViewModel(MainWindow window)
         {
-            this._logger = logger;
             this._window = window;
             this._modList = this._window.Find<ListBox>("ModList");
-            this.Manager = new ModManager(logger);
+            this.Manager = new ModManager();
 
             var moveUp = this.WhenAnyValue(x => x.SelectedIndex).Select(x => x > 0);
             var moveDown = this.WhenAnyValue(x => x.SelectedIndex).Select(x => x >= 0 && x < this.Manager.Enabled.Count - 1);

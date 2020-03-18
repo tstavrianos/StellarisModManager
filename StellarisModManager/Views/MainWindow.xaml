@@ -1,39 +1,27 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="clr-namespace:StellarisModManager.ViewModels;assembly=StellarisModManager"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:iconPack="clr-namespace:MicroCubeAvalonia.IconPack;assembly=StellarisModManager"
-        xmlns:common="clr-namespace:Paradox.Common;assembly=Paradox.Common"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-        x:Class="StellarisModManager.Views.MainWindow"
-        Icon="/Assets/avalonia-logo.ico"
-        Title="Stellaris Mod Manager"
-        Width="800" Height="450">
-
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="clr-namespace:StellarisModManager.ViewModels;assembly=StellarisModManager" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:iconPack="clr-namespace:MicroCubeAvalonia.IconPack;assembly=StellarisModManager" xmlns:common="clr-namespace:Paradox.Common;assembly=Paradox.Common" mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450" x:Class="StellarisModManager.Views.MainWindow" Icon="/Assets/avalonia-logo.ico" Title="Stellaris Mod Manager" Width="800" Height="450">
     <DockPanel>
         <StackPanel DockPanel.Dock="Left" Orientation="Vertical">
             <Button Name="CheckAll" HorizontalContentAlignment="Left" Command="{Binding CheckAll}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
-                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.CheckSquareRegular"  Width="16" Height="16"/>
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.CheckSquareRegular" Width="16" Height="16"/>
                     <TextBlock Focusable="False" Text="All"/>
                 </StackPanel>
             </Button>
             <Button Name="UncheckAll" HorizontalContentAlignment="Left" Command="{Binding UncheckAll}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
-                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SquareRegular"  Width="16" Height="16"/>
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SquareRegular" Width="16" Height="16"/>
                     <TextBlock Focusable="False" Text="None"/>
                 </StackPanel>
             </Button>
             <Button Name="InvertCheck" HorizontalContentAlignment="Left" Command="{Binding InvertCheck}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
-                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.CheckSquareSolid"  Width="16" Height="16"/>
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.CheckSquareSolid" Width="16" Height="16"/>
                     <TextBlock Focusable="False" Text="Invert"/>
                 </StackPanel>
             </Button>
             <Button Name="Save" HorizontalContentAlignment="Left" Command="{Binding Save}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
-                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SaveSolid"  Width="16" Height="16"/>
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SaveSolid" Width="16" Height="16"/>
                     <TextBlock Focusable="False" Text="Export"/>
                 </StackPanel>
             </Button>
@@ -41,41 +29,41 @@
         <StackPanel DockPanel.Dock="Right" Orientation="Vertical">
             <Button Name="MoveToTop" HorizontalContentAlignment="Left" Command="{Binding MoveToTop}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
-                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.AngleDoubleUpSolid"  Width="16" Height="16"/>
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.AngleDoubleUpSolid" Width="16" Height="16"/>
                     <TextBlock Focusable="False" Text="To Top"/>
                 </StackPanel>
             </Button>
             <Button Name="MoveUp" HorizontalContentAlignment="Left" Command="{Binding MoveUp}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
-                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.AngleUpSolid"  Width="16" Height="16"/>
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.AngleUpSolid" Width="16" Height="16"/>
                     <TextBlock Focusable="False" Text="Up"/>
                 </StackPanel>
             </Button>
             <Button Name="MoveDown" HorizontalContentAlignment="Left" Command="{Binding MoveDown}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
-                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.AngleDownSolid"  Width="16" Height="16"/>
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.AngleDownSolid" Width="16" Height="16"/>
                     <TextBlock Focusable="False" Text="Down"/>
                 </StackPanel>
             </Button>
             <Button Name="MoveToBottom" HorizontalContentAlignment="Left" Command="{Binding MoveToBottom}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
-                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.AngleDoubleDownSolid"  Width="16" Height="16"/>
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.AngleDoubleDownSolid" Width="16" Height="16"/>
                     <TextBlock Focusable="False" Text="To Bottom"/>
                 </StackPanel>
             </Button>
             <Button Name="AlphaSort" HorizontalContentAlignment="Left" Command="{Binding AlphaSort}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
-                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SortAlphaDownSolid"  Width="16" Height="16"/>
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SortAlphaDownSolid" Width="16" Height="16"/>
                     <TextBlock Focusable="False" Text="Alphabetical"/>
                 </StackPanel>
             </Button>
             <Button Name="ReverseOrder" HorizontalContentAlignment="Left" Command="{Binding ReverseOrder}" ClickMode="Release">
                 <StackPanel Orientation="Horizontal">
-                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SortAmountUpSolid"  Width="16" Height="16"/>
+                    <iconPack:IconControl Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SortAmountUpSolid" Width="16" Height="16"/>
                     <TextBlock Focusable="False" Text="Reverse"/>
                 </StackPanel>
             </Button>
-        </StackPanel>    
+        </StackPanel>
         <Grid ColumnDefinitions="4*, 5, 2*">
             <DataGrid Grid.Column="0" CanUserReorderColumns="True" CanUserSortColumns="True" CanUserResizeColumns="True" Items="{Binding Manager.Mods}">
                 <DataGrid.Columns>
@@ -91,48 +79,45 @@
                     <DataGridTextColumn Header="SupportedVersion" Binding="{Binding ModDefinitionFile.SupportedVersion}" Width="auto"/>
                 </DataGrid.Columns>
             </DataGrid>
-            <GridSplitter Grid.Column="1" BorderThickness="5" Background="Gray" HorizontalAlignment="Stretch"/>
-            <ListBox Grid.Column="2" Items="{Binding Manager.Enabled}" SelectedIndex="{Binding SelectedIndex}" Name="ModList" BorderThickness="0"
-                     ScrollViewer.HorizontalScrollBarVisibility="Visible" ScrollViewer.VerticalScrollBarVisibility="Visible">
+            <GridSplitter Grid.Column="1" BorderThickness="5" Background="LightGray" HorizontalAlignment="Stretch"/>
+            <ListBox Grid.Column="2" Items="{Binding Manager.Enabled}" SelectedIndex="{Binding SelectedIndex}" Name="ModList" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Visible" ScrollViewer.VerticalScrollBarVisibility="Visible">
                 <ListBox.ItemTemplate>
                     <DataTemplate DataType="common:ModEntry">
                         <Grid ColumnDefinitions="*,auto,16" RowDefinitions="16" Name="OperationGrid" Margin="0" Background="Transparent">
-                            <TextBlock Focusable="False" Grid.Column="0" Text="{Binding DisplayName}" Margin="5,0" />
+                            <TextBlock Focusable="False" Grid.Column="0" Text="{Binding DisplayName}" Margin="5,0"/>
                             <ItemsControl Items="{Binding ModConflicts}" Grid.Column="1">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <StackPanel Orientation="Horizontal"/>
                                     </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>                            
+                                </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="common:ModConflict">
                                         <StackPanel>
-                                            <iconPack:IconControl Width="16" Height="16" Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SortUpSolid" IsVisible="{Binding IsUp}" ToolTip.Tip="{Binding DependsOn}" />
-                                            <iconPack:IconControl Width="16" Height="16" Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SortDownSolid" IsVisible="{Binding IsDown}" ToolTip.Tip="{Binding DependsOn}" />
-                                            <iconPack:IconControl Width="16" Height="16" Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.ExclamationCircleSolid" IsVisible="{Binding IsMissing}" ToolTip.Tip="{Binding DependsOn}" />
+                                            <iconPack:IconControl Width="16" Height="16" Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SortUpSolid" IsVisible="{Binding IsUp}" ToolTip.Tip="{Binding DependsOn}"/>
+                                            <iconPack:IconControl Width="16" Height="16" Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.SortDownSolid" IsVisible="{Binding IsDown}" ToolTip.Tip="{Binding DependsOn}"/>
+                                            <iconPack:IconControl Width="16" Height="16" Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.ExclamationCircleSolid" IsVisible="{Binding IsMissing}" ToolTip.Tip="{Binding DependsOn}"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
-                            <iconPack:IconControl Grid.Column="2" Cursor="SizeAll" Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.BarsSolid" IsVisible="{Binding $parent.IsPointerOver}" ToolTip.Tip="Click and drag to move this operation." PointerPressed="StartDrag" PointerReleased="EndDrag" PointerMoved = "DoDrag" />
+                            <iconPack:IconControl Grid.Column="2" Cursor="SizeAll" Focusable="False" Background="Transparent" Foreground="Black" Kind="PackIconFontAwesomeKind.BarsSolid" IsVisible="{Binding $parent.IsPointerOver}" ToolTip.Tip="Click and drag to move this operation." PointerPressed="StartDrag" PointerReleased="EndDrag" PointerMoved="DoDrag"/>
                         </Grid>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
         </Grid>
     </DockPanel>
-        
-    
     <Window.Styles>
         <Style Selector="ListBoxItem.BlackBottom">
-            <Setter Property="BorderThickness" Value="0,0,0,2" />
-            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderMidBrush}" />
-            <Setter Property="Margin" Value="0,0,0,-2" />
+            <Setter Property="BorderThickness" Value="0,0,0,2"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderMidBrush}"/>
+            <Setter Property="Margin" Value="0,0,0,-2"/>
         </Style>
         <Style Selector="ListBoxItem.BlackTop">
-            <Setter Property="BorderThickness" Value="0,2,0,0" />
-            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderMidBrush}" />
-            <Setter Property="Margin" Value="0,-2,0,0" />
+            <Setter Property="BorderThickness" Value="0,2,0,0"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorderMidBrush}"/>
+            <Setter Property="Margin" Value="0,-2,0,0"/>
         </Style>
     </Window.Styles>
 </Window>

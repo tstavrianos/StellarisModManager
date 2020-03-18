@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
-using DynamicData;
 using Paradox.Common.Json;
 using ReactiveUI;
+using Splat;
 
 namespace Paradox.Common
 {
@@ -37,20 +37,18 @@ namespace Paradox.Common
                 else if (!string.IsNullOrWhiteSpace(value.SupportedVersion) && Regex.IsMatch(value.SupportedVersion,
                     @"((\d+)|\*)\.((\d+)|\*)\.((\d+)|\*)"))
                 {
-                    this._supportedVersion = new SupportedVersion(value.SupportedVersion,
-                        this._modManager.Logger);
+                    this._supportedVersion = new SupportedVersion(value.SupportedVersion);
                     this.Outdated = this._supportedVersion < this._modManager.Version;
                 }
                 else if (!string.IsNullOrWhiteSpace(value.Version) && Regex.IsMatch(value.Version,
                     @"((\d+)|\*)\.((\d+)|\*)\.((\d+)|\*)"))
                 {
-                    this._supportedVersion = new SupportedVersion(value.Version,
-                        this._modManager.Logger);
+                    this._supportedVersion = new SupportedVersion(value.Version);
                     this.Outdated = this._supportedVersion < this._modManager.Version;
                 }
                 else
                 {
-                    this._modManager.Logger?.Error($"{this._modDefinitionFile.ModDefinitionFilePath} - Invalid supported_version");
+                    this.Log().Error($"{this._modDefinitionFile.ModDefinitionFilePath} - Invalid supported_version");
                     this._supportedVersion = new SupportedVersion(0, 0, 0);
                     this.Outdated = true;
                 }
@@ -78,7 +76,7 @@ namespace Paradox.Common
             {
                 if (this._isChecked != value && this._modManager.Loaded)
                 {
-                    if (value == true)
+                    if (value)
                     {
                         this._modManager.Enabled.Add(this);
                     }

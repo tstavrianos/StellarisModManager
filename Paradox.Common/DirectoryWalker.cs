@@ -2,14 +2,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Paradox.Common.Interfaces;
-using Serilog;
+using Splat;
 
 namespace Paradox.Common
 {
      /// <summary>
     /// Helper for finding files in nested directory structures.
     /// </summary>
-    public sealed class DirectoryWalker : IDirectoryWalker
+    public sealed class DirectoryWalker : IDirectoryWalker, IEnableLogger
     {
         /// <summary>
         /// Walks a directory tree and updates the list with  all the files found matching the specified mask.
@@ -21,19 +21,19 @@ namespace Paradox.Common
         /// <param name="includeFileMask">A file mask to look for, e.g. *.txt</param>
         /// <param name="excludedFileNames">File names (not mask) to exclude</param>
         /// <returns>All files found anywhere in the directory tree of the <c>root</c> that match the mask and are not on the exclude list</returns>
-        public static IEnumerable<FileInfo> FindFilesInDirectoryTree(string root, string includeFileMask, IEnumerable<string> excludedFileNames, ILogger logger = null) {
+        private IEnumerable<FileInfo> FindFilesInDirectoryTree(string root, string includeFileMask, IEnumerable<string> excludedFileNames) {
             excludedFileNames = excludedFileNames.NullToEmpty();
             var result = new List<FileInfo>();
-            FindFilesInDirectoryTree(new DirectoryInfo(root), result, includeFileMask, excludedFileNames, logger);
+            this.FindFilesInDirectoryTree(new DirectoryInfo(root), result, includeFileMask, excludedFileNames);
             return result;
         }
         
-        public static IEnumerable<FileInfo> FindFilesInDirectoryTree(string root, string includeFileMask, ILogger logger = null)
+        public IEnumerable<FileInfo> FindFilesInDirectoryTree(string root, string includeFileMask)
         {
-            return FindFilesInDirectoryTree(root, includeFileMask, null, logger);
+            return this.FindFilesInDirectoryTree(root, includeFileMask, null);
         }
 
-        private static void FindFilesInDirectoryTree(DirectoryInfo root, ICollection<FileInfo> fileInfos, string fileMask, IEnumerable<string> excludedFileNames, ILogger logger)
+        private void FindFilesInDirectoryTree(DirectoryInfo root, ICollection<FileInfo> fileInfos, string fileMask, IEnumerable<string> excludedFileNames)
         {
             FileInfo[] files = null;
 
@@ -44,7 +44,7 @@ namespace Paradox.Common
             }
             catch (DirectoryNotFoundException e)
             {
-                logger?.Error(e.Message);
+                this.Log().Error(e.Message);
             }
 
             if (files == null) return;
@@ -58,12 +58,12 @@ namespace Paradox.Common
             {
                 // Resursive call for each subdirectory.
                 // ReSharper disable once PossibleMultipleEnumeration
-                FindFilesInDirectoryTree(dirInfo, fileInfos, fileMask, excludedFileNames, logger);
+                this.FindFilesInDirectoryTree(dirInfo, fileInfos, fileMask, excludedFileNames);
             }
         }
 
-        IEnumerable<string> IDirectoryWalker.FindFilesInDirectoryTree(string root, string includeFileMask, IEnumerable<string> excludedFileNames, ILogger logger) {
-            return FindFilesInDirectoryTree(root, includeFileMask, excludedFileNames, logger).Select(x => x.FullName).ToList();
+        IEnumerable<string> IDirectoryWalker.FindFilesInDirectoryTree(string root, string includeFileMask, IEnumerable<string> excludedFileNames) {
+            return this.FindFilesInDirectoryTree(root, includeFileMask, excludedFileNames).Select(x => x.FullName).ToList();
         }
     }
 }

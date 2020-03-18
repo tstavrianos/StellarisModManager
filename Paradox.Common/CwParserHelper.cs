@@ -6,16 +6,15 @@ using CWTools.CSharp;
 using CWTools.Parser;
 using CWTools.Process;
 using Paradox.Common.Interfaces;
-using Serilog;
+using Splat;
 
 namespace Paradox.Common
 {
      /// <summary>
     /// Main Helper class for using the CWTools library to parse general PDX files into a (raw) DTO.
     /// </summary>
-    public sealed class CwParserHelper : ICwParserHelper {
+    public sealed class CwParserHelper : ICwParserHelper, IEnableLogger {
         private readonly IScriptedVariablesAccessor _scriptedVariablesAccessor;
-        private readonly ILogger _logger;
 
         static CwParserHelper()
         {
@@ -25,15 +24,14 @@ namespace Paradox.Common
         /// <summary>
         /// Create a CWParserHelper that will not attempt to resolve in files.
         /// </summary>
-        public CwParserHelper(ILogger logger) : this(new DummyScriptedVariablesAccessor(), logger) {
+        public CwParserHelper() : this(new DummyScriptedVariablesAccessor()) {
         }
         
         /// <summary>
         /// Create a CWParserHelper where the nodes will attempt to resolve variables using the specified <see cref="IScriptedVariablesAccessor"/>.
         /// </summary>
-        public CwParserHelper(IScriptedVariablesAccessor scriptedVariablesAccessor, ILogger logger) {
+        public CwParserHelper(IScriptedVariablesAccessor scriptedVariablesAccessor) {
             this._scriptedVariablesAccessor = scriptedVariablesAccessor;
-            this._logger = logger;
         }
         
         /// <inheritdoc />
@@ -47,7 +45,7 @@ namespace Paradox.Common
                 }
                 catch (Exception e) {
                     if (continueOnFailure) {
-                        this._logger?.Error(e, "Error parsing file {file}", paradoxFile);
+                        this.Log().Error(e, "Error parsing file {file}", paradoxFile);
                     }
                     else {
                         throw;
