@@ -37,6 +37,7 @@ namespace StellarisModManager.ViewModels
             this.Save = ReactiveCommand.Create(() => this.Manager.Save());
             this.AlphaSort = ReactiveCommand.Create(() => this.Manager.AlphaSort());
             this.ReverseOrder = ReactiveCommand.Create(() => this.Manager.ReverseOrder());
+            this.ExperimentalSort = ReactiveCommand.Create(() => this.Manager.ExperimentalSort());
             this.MoveToTop = ReactiveCommand.Create(() => this.Manager.MoveToTop(this.SelectedIndex), moveUp.Select(x => x));
             this.MoveUp = ReactiveCommand.Create(() => this.Manager.MoveUp(this.SelectedIndex), moveUp.Select(x => x));
             this.MoveDown = ReactiveCommand.Create(() => this.Manager.MoveDown(this.SelectedIndex), moveDown.Select(x => x));
@@ -90,6 +91,7 @@ namespace StellarisModManager.ViewModels
         public ICommand Save { get; }
         public ICommand AlphaSort { get; }
         public ICommand ReverseOrder { get; }
+        public ICommand ExperimentalSort { get; }
         public ICommand MoveToTop { get; }
         public ICommand MoveUp { get; }
         public ICommand MoveDown { get; }

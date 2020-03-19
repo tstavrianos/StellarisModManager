@@ -72,9 +72,26 @@ namespace Paradox.Common
             var marshaled = this.ToMyNode(processed);
 
             return marshaled;
-
         }
         
+        public CwNode ParseParadoxString(string filePath, string contents)
+        {
+            // raw parsing
+            var parsed = CKParser.parseEventString(filePath, contents);
+
+            if (!parsed.IsSuccess) throw new Exception(parsed.GetError());
+            // this is an extension method in CWTools.CSharp
+            var eventFile = parsed.GetResult();
+
+            //"Process" result into nicer format
+            var processed = CK2Process.processEventFile(eventFile);
+
+            // marshall this into a more c# fieldy type using the CWTools example
+            var marshaled = this.ToMyNode(processed);
+
+            return marshaled;
+
+        }
         private CwNode ToMyNode(Node n)
         {
             var leaves = n.AllChildren.Where(x => x.IsLeafC).Select(x => ToMyKeyValue(x.leaf)).ToList();

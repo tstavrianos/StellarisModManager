@@ -61,11 +61,11 @@ namespace Paradox.Common
             this.ModGroup = grouping ?? this.ModName;
         }
 
-        public static string GetCommonDirectory(string rootDirectory) {
+        private static string GetCommonDirectory(string rootDirectory) {
             return Path.Combine(rootDirectory, "common");
         }
 
-        public static string GetTechnologyDirectory(string rootDirectory) {
+        private static string GetTechnologyDirectory(string rootDirectory) {
             return Path.Combine(GetCommonDirectory(rootDirectory), "technology");
         }
         
@@ -77,23 +77,23 @@ namespace Paradox.Common
             return Path.Combine(GetCommonDirectory(rootDirectory), "decisions");
         }
 
-        public static string GetLocalisationDirectory(string rootDirectory) {
+        private static string GetLocalisationDirectory(string rootDirectory) {
             return Path.Combine(rootDirectory, "localisation");
         }
 
-        public static string GetScriptedVariablesDirectory(string rootDirectory) {
+        private static string GetScriptedVariablesDirectory(string rootDirectory) {
             return Path.Combine(GetCommonDirectory(rootDirectory), "scripted_variables");
         }
 
-        public static string GetIconsDirectory(string rootDirectory) {
+        private static string GetIconsDirectory(string rootDirectory) {
             return Path.Combine(rootDirectory, "gfx", "interface", "icons");
         }
 
-        public static string GetComponentTemplatesDirectory(string rootDirectory) {
+        private static string GetComponentTemplatesDirectory(string rootDirectory) {
             return Path.Combine(GetCommonDirectory(rootDirectory), "component_templates");
         }
-        
-        public static string GetComponentSetsDirectory(string rootDirectory) {
+
+        private static string GetComponentSetsDirectory(string rootDirectory) {
             return Path.Combine(GetCommonDirectory(rootDirectory), "component_sets");
         }
         

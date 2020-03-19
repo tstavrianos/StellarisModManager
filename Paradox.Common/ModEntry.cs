@@ -1,3 +1,4 @@
+using System;
 using System.Text.RegularExpressions;
 using Paradox.Common.Helpers;
 using Paradox.Common.Json;
@@ -140,6 +141,34 @@ namespace Paradox.Common
                 this._supportedVersion = new SupportedVersion(0, 0, 0);
                 this.Outdated = true;
             }
+        }
+
+        public static bool operator ==(ModEntry a, ModEntry b)
+        {
+            if (ReferenceEquals(a, null))
+            {
+                return ReferenceEquals(b, null);
+            }
+
+            if (ReferenceEquals(b, null)) return false;
+
+            if (a.ModsRegistryEntry != null && b.ModsRegistryEntry != null)
+                return a.ModsRegistryEntry.Id.Equals(b.ModsRegistryEntry.Id, StringComparison.OrdinalIgnoreCase);
+            
+            if (!string.IsNullOrWhiteSpace(a.ModDefinitionFile.RemoteFileId))
+                return a.ModDefinitionFile.RemoteFileId.Equals(b.ModDefinitionFile.RemoteFileId,
+                    StringComparison.Ordinal);
+            
+            if (!string.IsNullOrWhiteSpace(a.ModDefinitionFile.Name))
+                return a.ModDefinitionFile.RemoteFileId.Equals(b.ModDefinitionFile.Name,
+                    StringComparison.OrdinalIgnoreCase);
+            
+            return false;
+        }
+
+        public static bool operator !=(ModEntry a, ModEntry b)
+        {
+            return !(a == b);
         }
     }
 }

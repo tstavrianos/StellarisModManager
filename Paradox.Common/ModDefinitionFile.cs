@@ -12,6 +12,7 @@ namespace Paradox.Common
     /// </summary>
     public sealed class ModDefinitionFile
     {
+        private static readonly string[] FileExtensions = { ".gfx", ".gui", ".txt" };
         private readonly string _stellarisDataPath;
         private readonly CwNode _node;
 
@@ -51,19 +52,19 @@ namespace Paradox.Common
 
         public string Key => $"mod/{System.IO.Path.GetFileName(this.ModDefinitionFilePath)}";
 
-        public IEnumerable<string> ModifiedFiles { get; }
+        public IEnumerable<ModDataFile> ModifiedFiles { get; }
 
         internal ModDefinitionFile(string modDefinitionFilePath, string stellarisDataPath, CwNode node)
         {
             this.ModDefinitionFilePath = modDefinitionFilePath;
             this._stellarisDataPath = stellarisDataPath;
             this._node = node;
-            this.ModifiedFiles = this.LoadFiles(Path2.GetDirectoryName(Path2.GetDirectoryName(modDefinitionFilePath)));
+            this.ModifiedFiles = this.LoadFiles(stellarisDataPath);
         }
 
-        private IEnumerable<string> LoadFiles(string basePath)
+        private IEnumerable<ModDataFile> LoadFiles(string basePath)
         {
-            var ret = new List<string>();
+            var ret = new List<ModDataFile>();
             var mPath = Path2.Combine(basePath, this.Archive ?? this.Path);
 
             if (Path2.GetExtension(mPath) == ".zip")
@@ -82,7 +83,11 @@ namespace Paradox.Common
                         continue;
                     }
 
-                    ret.Add(name);
+                    if (!FileExtensions.Contains(System.IO.Path.GetExtension(name), StringComparer.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+                    ret.Add(new ModDataFile(name, item.InputStream));
                 }
             }
             else
@@ -95,7 +100,16 @@ namespace Paradox.Common
                     if (string.Compare(Path2.GetFileName(path), "descriptor.mod", StringComparison.OrdinalIgnoreCase) ==
                         0) continue;
                     var refPath = Uri.UnescapeDataString(new Uri(mPath).MakeRelativeUri(new Uri(path)).OriginalString);
-                    ret.Add(refPath.Replace('\\', '/'));
+                    var name = refPath.Replace('\\', '/');
+                    if (!FileExtensions.Contains(System.IO.Path.GetExtension(name), StringComparer.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    using (var stream = File.OpenRead(path))
+                    {
+                        ret.Add(new ModDataFile(name, stream));
+                    }
                 }
             }
 

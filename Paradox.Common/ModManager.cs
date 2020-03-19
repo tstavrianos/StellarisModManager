@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Paradox.Common.Helpers;
 using Splat;
@@ -15,7 +13,7 @@ namespace Paradox.Common
     {
         public ObservableCollection<ModEntry> Mods { get; } = new ObservableCollection<ModEntry>();
         public ObservableCollection<ModEntry> Enabled { get; } = new ObservableCollection<ModEntry>();
-        private Dictionary<string, string> _fileConflicts;
+        private readonly Dictionary<string, string> _fileConflicts;
         public string BasePath { get; }
         public string ModPath { get; }
         internal readonly SupportedVersion Version;
@@ -80,130 +78,6 @@ namespace Paradox.Common
             this.Loaded = true;
             this._runValidation = true;
             this.Validate();
-
-            //Task.Run(Do).Wait();            
-        }
-        
-        public class Tag
-        {
-            public string tag { get; set; }
-        }
-
-        public class Publishedfiledetail
-        {
-            public string publishedfileid { get; set; }
-            public int result { get; set; }
-            public string creator { get; set; }
-            public int creator_app_id { get; set; }
-            public int consumer_app_id { get; set; }
-            public string filename { get; set; }
-            public int file_size { get; set; }
-            public string file_url { get; set; }
-            public string hcontent_file { get; set; }
-            public string preview_url { get; set; }
-            public string hcontent_preview { get; set; }
-            public string title { get; set; }
-            public string description { get; set; }
-            public int time_created { get; set; }
-            public int time_updated { get; set; }
-            public int visibility { get; set; }
-            public bool banned { get; set; }
-            public string ban_reason { get; set; }
-            public int subscriptions { get; set; }
-            public int favorited { get; set; }
-            public int lifetime_subscriptions { get; set; }
-            public int lifetime_favorited { get; set; }
-            public int views { get; set; }
-            public List<Tag> tags { get; set; }
-        }
-
-        public class Response
-        {
-            public int result { get; set; }
-            public int resultcount { get; set; }
-            public List<Publishedfiledetail> publishedfiledetails { get; set; }
-        }
-
-        public class GetPublishedFileDetailsResponse
-        {
-            public Response response { get; set; }
-        }
-        
-        public static async Task<GetPublishedFileDetailsResponse> GetPublishedFileDetailsAsync(HttpClient webClient, string fileId) => await GetPublishedFileDetailsAsync(webClient, new List<string>() { fileId });
-
-        public class Cache {
-            public List<CacheFileDetail> FileDetails = new List<CacheFileDetail>();
-        }
-        public class CacheFileDetail : Publishedfiledetail {
-            public DateTime lastFetched { get; set; }
-            public static CacheFileDetail FromPublishedfiledetail(Publishedfiledetail publishedfiledetail)
-            {
-                var fdstr = JsonConvert.SerializeObject(publishedfiledetail);
-                var res = JsonConvert.DeserializeObject<CacheFileDetail>(fdstr);
-                res.lastFetched = DateTime.Now;
-                return res;
-            }
-        }
-        private static FileInfo cacheFile = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory).CombineFile("steam.cache.json");
-        private static Cache cache;
-        private static void CheckCache()
-        {
-            if (cache is null) {
-                if (cacheFile.Exists) {
-                    try { cache = JsonConvert.DeserializeObject<Cache>(File.ReadAllText(cacheFile.FullName));
-                    } catch (Exception ex) {
-                        Console.WriteLine($"[ERROR] [Steam] Unable to load cache ({ex.Message}), starting over...");
-                        cache = new Cache();
-                    }
-                } else {
-                    cache = new Cache();
-                }
-            }
-        }
-
-        public static async Task<GetPublishedFileDetailsResponse> GetPublishedFileDetailsAsync(HttpClient webClient, List<string> fileIds)
-        {
-            var parsedResponse = new GetPublishedFileDetailsResponse();
-            if (fileIds.Count < 1) return parsedResponse;
-            CheckCache();
-            if (cacheFile.Exists && (!cacheFile.LastWriteTime.ExpiredSince(10))) {
-                foreach (var fileId in fileIds) {
-                    var item = cache.FileDetails.FirstOrDefault(x => x.publishedfileid == fileId);
-                    if (item != null) parsedResponse.response.publishedfiledetails.Add(item);
-                }
-                if (parsedResponse.response.publishedfiledetails.Count >= fileIds.Count)
-                    return parsedResponse;
-            }
-            var values = new Dictionary<string, string> { { "itemcount", fileIds.Count.ToString() } };
-            for (int i = 0; i < fileIds.Count; i++) {
-                values.Add($"publishedfileids[{i}]", fileIds[i].ToString() );
-            }
-            var content = new FormUrlEncodedContent(values);
-            var url = new Uri("https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/");
-            //Console.WriteLine($"[Steam] POST to {url} with payload {content.ToJson(false)} and values {values.ToJson(false)}");
-            var response = await webClient.PostAsync(url, content);
-            var responseString = await response.Content.ReadAsStringAsync();
-            try { parsedResponse = JsonConvert.DeserializeObject<GetPublishedFileDetailsResponse>(responseString); }
-            catch (Exception ex) { Console.WriteLine($"[Steam] Could not deserialize response ({ex.Message})\n{responseString}"); } // {response.ReasonPhrase} ({response.StatusCode})\n
-
-            foreach (var item in parsedResponse.response.publishedfiledetails) {
-                cache.FileDetails.RemoveAll(x => x.publishedfileid == item.publishedfileid);
-                cache.FileDetails.Add(CacheFileDetail.FromPublishedfiledetail(item));
-            }
-            File.WriteAllText(cacheFile.FullName, JsonConvert.SerializeObject(cache));
-            return parsedResponse;
-        }
-
-        private async Task Do()
-        {
-            var client = new HttpClient();
-            
-            var ids = this.Mods.Where(x => !string.IsNullOrWhiteSpace(x.ModDefinitionFile?.RemoteFileId) && ulong.TryParse(x.ModDefinitionFile.RemoteFileId, out var _)).Select(x => x.ModDefinitionFile.RemoteFileId).ToList();
-            var t = await GetPublishedFileDetailsAsync(client, ids);
-            foreach (var t1 in t.response.publishedfiledetails)
-            {
-                this.Log().Debug(t1.title);
-            }
         }
 
         private static T LoadJson<T>(string file, Action<T> found, Func<T> notFound)
@@ -248,30 +122,30 @@ namespace Paradox.Common
             var gameData = LoadJson(gameDataFile, x => x.ModsOrder.Clear(), () => new Json.GameData { ModsOrder = new List<string>() });
             var dlcLoadFile = Path.Combine(this.BasePath, "dlc_load.json");
             var dlcLoad = LoadJson(dlcLoadFile, x => x.EnabledMods.Clear(), () => new Json.DlcLoad { DisabledDlcs = new List<string>(), EnabledMods = new List<string>() });
-            var modsRegistryFile = Path.Combine(this.BasePath, "mods_registry.json");
-            var modsRegistry = LoadJson(modsRegistryFile, x => x.Clear(), () => new Json.ModsRegistry());
+            //var modsRegistryFile = Path.Combine(this.BasePath, "mods_registry.json");
+            //var modsRegistry = LoadJson(modsRegistryFile, x => x.Clear(), () => new Json.ModsRegistry());
 
             foreach (var item in this.Enabled)
                 gameData.ModsOrder.Add(item.ModsRegistryEntry.Id);
             foreach (var item in this.Mods.Where(x => x.IsChecked == false).OrderBy(x => x.OriginalSpot))
                 gameData.ModsOrder.Add(item.ModsRegistryEntry.Id);
-            foreach (var item in this.Mods.Where(x => x.IsChecked).OrderBy(x => x.OriginalSpot))
+            foreach (var item in this.Enabled.Reverse())
                 dlcLoad.EnabledMods.Add(item.ModDefinitionFile.Key);
-            foreach (var item in this.Mods.OrderBy(x => x.OriginalSpot))
-                modsRegistry.Add(item.ModsRegistryEntry.Id, item.ModsRegistryEntry);
+            /*foreach (var item in this.Mods.OrderBy(x => x.OriginalSpot))
+                modsRegistry.Add(item.ModsRegistryEntry.Id, item.ModsRegistryEntry);*/
 
             BackupFile(gameDataFile);
             File.WriteAllText(gameDataFile, JsonConvert.SerializeObject(gameData));
             BackupFile(dlcLoadFile);
             File.WriteAllText(dlcLoadFile, JsonConvert.SerializeObject(dlcLoad));
-            BackupFile(modsRegistryFile);
-            File.WriteAllText(modsRegistryFile, JsonConvert.SerializeObject(modsRegistry));
+            //BackupFile(modsRegistryFile);
+            //File.WriteAllText(modsRegistryFile, JsonConvert.SerializeObject(modsRegistry));
         }
 
         public void AlphaSort()
         {
             this._runValidation = false;
-            var items = this.Enabled.OrderBy(x => x.ToString()).ToArray();
+            var items = this.Enabled.OrderBy(x => x.DisplayName).ToArray();
             this.Enabled.Clear();
             foreach (var item in items)
             {
@@ -456,20 +330,18 @@ namespace Paradox.Common
             foreach (var mod in this.Enabled)
             {
                 mod.OverwrittenByOthers = this._fileConflicts.Any(x =>
-                    mod.ModDefinitionFile.ModifiedFiles.Contains(x.Key) &&
+                    mod.ModDefinitionFile.ModifiedFiles.Any(y => y.Valid && y.FullPath == x.Key) &&
                     x.Value != mod.ModDefinitionFile.RemoteFileId);
 
                 mod.OverwritesOthers = this._fileConflicts.Any(x =>
-                    mod.ModDefinitionFile.ModifiedFiles.Contains(x.Key) &&
-                    x.Value == mod.ModDefinitionFile.RemoteFileId);
+                    mod.ModDefinitionFile.ModifiedFiles.Any(y => y.Valid && y.FullPath == x.Key) &&
+                                                                 x.Value == mod.ModDefinitionFile.RemoteFileId);
 
-                mod.AllFilesOverwritten = mod.ModDefinitionFile.ModifiedFiles.All(x =>
-                    this._fileConflicts.TryGetValue(x, out var mod2) && mod2 != mod.ModDefinitionFile.RemoteFileId);
-                if (mod.AllFilesOverwritten)
-                {
-                    mod.OverwritesOthers = false;
-                    mod.OverwrittenByOthers = false;
-                }
+                mod.AllFilesOverwritten = mod.ModDefinitionFile.ModifiedFiles.All(x => x.Valid &&
+                    this._fileConflicts.TryGetValue(x.FullPath, out var mod2) && mod2 != mod.ModDefinitionFile.RemoteFileId);
+                if (!mod.AllFilesOverwritten) continue;
+                mod.OverwritesOthers = false;
+                mod.OverwrittenByOthers = false;
             }
         }
 
@@ -477,11 +349,177 @@ namespace Paradox.Common
         {
             foreach (var file in mod1.ModDefinitionFile.ModifiedFiles)
             {
-                if (mod2.ModDefinitionFile.ModifiedFiles.Contains(file, StringComparer.OrdinalIgnoreCase))
+                if (mod2.ModDefinitionFile.ModifiedFiles.Any(x => x.Valid && x.FullPath.Equals(file.FullPath, StringComparison.OrdinalIgnoreCase)))
                 {
-                    this._fileConflicts[file] = mod2.ModDefinitionFile.RemoteFileId;
+                    this._fileConflicts[file.FullPath] = mod2.ModDefinitionFile.RemoteFileId;
                 }
             }
+        }
+
+        private static void SortAfterDependencies(IList<ModEntry> list, IEnumerable<string> dependencies, int order,
+            string name)
+        {
+            foreach (var n in dependencies)
+            {
+                var found = list.FirstOrDefault(x => x.DisplayName == n);
+                if(found == null) continue;
+                var i = list.IndexOf(found);
+                if (i <= order) continue;
+                var item = list[order];
+                list.RemoveAt(order);
+                list.Insert(i, item);
+                order = i;
+            }
+        }
+        
+        private static void SortAfterDependencies(IList<ModEntry> list)
+        {
+            for (var i = 0; i < list.Count; i++)
+            {
+                if (list[i].ModDefinitionFile.Dependencies != null)
+                {
+                    SortAfterDependencies(list, list[i].ModDefinitionFile.Dependencies, i, list[i].DisplayName);
+                }
+            }
+        }
+
+        private static Dictionary<string, IList<ModEntry>> MapTagsToDic(IEnumerable<ModEntry> list)
+        {
+            var ret = new Dictionary<string, IList<ModEntry>>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var entry in list)
+            {
+                if(entry.ModDefinitionFile.Tags is null) continue;
+                foreach (var tag in entry.ModDefinitionFile.Tags)
+                {
+                    if (!ret.TryGetValue(tag, out var l))
+                    {
+                        l = new List<ModEntry>();
+                        ret[tag] = l;
+                    }
+                    l.Add(entry);
+                }
+            }
+            
+            return ret;
+        }
+
+        private static List<ModEntry> RemoveDupes(IEnumerable<ModEntry> list)
+        {
+            var ret = new List<ModEntry>();
+            foreach (var l in list.Where(l => !ret.Contains(l)))
+            {
+                ret.Add(l);
+            }
+
+            return ret;
+        }
+
+        private static void Reorder(IList<ModEntry> list, ModEntry entry)
+        {
+            for (var i = 0; i < list.Count; i++)
+            {
+                if (list[i] != entry) continue;
+                list.RemoveAt(i);
+                list.Add(entry);
+                break;
+            }
+        }
+
+        private static void InsertPair(IList<ModEntry> list, ModEntry a, ModEntry b)
+        {
+            ModEntry comp = null;
+            for (var i = 0; i < list.Count; i++)
+            {
+                var mod = list[i];
+                if (mod != b) continue;
+                list.RemoveAt(i);
+                comp = mod;
+                break;
+            }
+
+            if (comp == null) return;
+            for (var i = 0; i < list.Count; i++)
+            {
+                if (list[i] != a) continue;
+                list.Insert(i + 1, comp);
+                break;
+            }
+        }
+
+        private static int PriorityForTag(string tag)
+        {
+            if (new[] {"OST", "Music", "Sound", "Graphics"}.Contains(tag, StringComparer.OrdinalIgnoreCase)) return 0;
+            if (new[] {"AI", "Utilities", "Fixes"}.Contains(tag, StringComparer.OrdinalIgnoreCase)) return 1;
+            if ("Patch".Equals(tag, StringComparison.OrdinalIgnoreCase)) return 2;
+            return 3;
+        }
+        
+        public void ExperimentalSort()
+        {
+            this._runValidation = false;
+
+            var list = new List<ModEntry>(this.Enabled);
+            list.Sort((a, b) => string.Compare(b.DisplayName, a.DisplayName, StringComparison.Ordinal));
+            for(var i = list.Count - 1; i > 0; i--)
+            {
+                var j = i - 1;
+                if (list[j].DisplayName.StartsWith(list[i].DisplayName, StringComparison.OrdinalIgnoreCase))
+                {
+                    list.Swap(i, j);
+                }
+            }
+
+            var output = new List<ModEntry>();
+            var addAfter = new List<ModEntry>();
+            var allTags = MapTagsToDic(list);
+            foreach (var o in new[] {"OST", "Music", "Sound", "Graphics"}.Where(o => allTags.ContainsKey(o)))
+            {
+                output.AddRange(allTags[o]);
+                allTags.Remove(o);
+            }
+            foreach (var o in new[] {"AI", "Utilities", "Fixes"}.Where(o => allTags.ContainsKey(o)))
+            {
+                addAfter.AddRange(allTags[o]);
+                allTags.Remove(o);
+            }
+
+            if (allTags.ContainsKey("Patch"))
+            {
+                var l = allTags["Patch"];
+                allTags.Remove("Patch");
+                foreach (var x in l.Where(x => !addAfter.Contains(x)))
+                {
+                    addAfter.Add(x);
+                }
+            }
+
+            foreach (var d in allTags)
+            {
+                switch (d.Value.Count)
+                {
+                    case 1:
+                        break;
+                    case 2:
+                        InsertPair(list, d.Value[0], d.Value[1]);
+                        break;
+                    default:
+                        output.AddRange(d.Value);
+                        break;
+                }
+            }
+            output.AddRange(addAfter);
+            output = RemoveDupes(output);
+            foreach (var entry in output)
+            {
+                Reorder(list, entry);
+            }
+            SortAfterDependencies(list); //move mods after their dependencies, if they exist
+            
+            this.Enabled.Clear();
+            foreach(var entry in list) this.Enabled.Add(entry);
+            this._runValidation = true;
+            this.Validate();
         }
     }
 }
