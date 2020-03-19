@@ -87,7 +87,11 @@ namespace Paradox.Common
                     {
                         continue;
                     }
-                    ret.Add(new ModDataFile(name, item.InputStream));
+
+                    using (var s = item.OpenReader())
+                    {
+                        ret.Add(new ModDataFile(name, s));
+                    }
                 }
             }
             else

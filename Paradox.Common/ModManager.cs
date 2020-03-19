@@ -70,6 +70,7 @@ namespace Paradox.Common
                 mod.NameDependencies = new ObservableHashSet<string>();
                 foreach (var d in mod.ModDefinitionFile.Dependencies ?? Enumerable.Empty<string>())
                 {
+                    //this.Log().Debug(d);
                     var found = this.Mods.FirstOrDefault(x => x.DisplayName == d);
                     if (found != null) mod.IdDependencies.Add(found.ModDefinitionFile.RemoteFileId);
                     else mod.NameDependencies.Add(d);
@@ -356,12 +357,11 @@ namespace Paradox.Common
             }
         }
 
-        private static void SortAfterDependencies(IList<ModEntry> list, IEnumerable<string> dependencies, int order,
-            string name)
+        private static void SortAfterDependencies(IList<ModEntry> list, IEnumerable<string> dependencies, int order)
         {
             foreach (var n in dependencies)
             {
-                var found = list.FirstOrDefault(x => x.DisplayName == n);
+                var found = list.FirstOrDefault(x => x.DisplayName.Equals(n, StringComparison.OrdinalIgnoreCase));
                 if(found == null) continue;
                 var i = list.IndexOf(found);
                 if (i <= order) continue;
@@ -372,14 +372,36 @@ namespace Paradox.Common
             }
         }
         
-        private static void SortAfterDependencies(IList<ModEntry> list)
+        private static void SortAfterDependencies(ObservableCollection<ModEntry> list)
         {
             for (var i = 0; i < list.Count; i++)
             {
-                if (list[i].ModDefinitionFile.Dependencies != null)
+                var order = i;
+                var changed = false;
+                var d = list[order].IdDependencies;
+                foreach (var j in d)
                 {
-                    SortAfterDependencies(list, list[i].ModDefinitionFile.Dependencies, i, list[i].DisplayName);
+                    var found = list.FirstOrDefault(x => x.ModDefinitionFile.RemoteFileId == j);
+                    if(found == null) continue;
+                    var k = list.IndexOf(found);
+                    if (k <= order) continue;
+                    list.Move(order, k);
+                    order = k;
+                    changed = true;
                 }
+                d = list[order].NameDependencies;
+                foreach (var j in d)
+                {
+                    var found = list.FirstOrDefault(x => x.ModDefinitionFile.Name == j);
+                    if(found == null) continue;
+                    var k = list.IndexOf(found);
+                    if (k <= order) continue;
+                    list.Move(order, k);
+                    order = k;
+                    changed = true;
+                }
+
+                if (changed) i--;
             }
         }
 
@@ -459,8 +481,7 @@ namespace Paradox.Common
         {
             this._runValidation = false;
 
-            var list = new List<ModEntry>(this.Enabled);
-            list.Sort((a, b) => string.Compare(b.DisplayName, a.DisplayName, StringComparison.Ordinal));
+            var list = new ObservableCollection<ModEntry>(this.Enabled.OrderByDescending(x => x.DisplayName));
             for(var i = list.Count - 1; i > 0; i--)
             {
                 var j = i - 1;
@@ -514,7 +535,7 @@ namespace Paradox.Common
             {
                 Reorder(list, entry);
             }
-            SortAfterDependencies(list); //move mods after their dependencies, if they exist
+            SortAfterDependencies(list);
             
             this.Enabled.Clear();
             foreach(var entry in list) this.Enabled.Add(entry);
