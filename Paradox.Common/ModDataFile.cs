@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using ReactiveUI;
+using Splat;
 
 namespace Paradox.Common
 {
@@ -31,23 +32,19 @@ namespace Paradox.Common
             private set => this.RaiseAndSetIfChanged(ref this._parseError, value);
         } 
 
-        public ModDataFile(string fullPath, Stream stream)
+        public ModDataFile(string fullPath, string data)
         {
             this.FullPath = fullPath;
-            var parser = new CwParserHelper();
             this.Valid = true;
-            
-            using (var reader = new StreamReader(stream, leaveOpen: true))
+            var parser = new CwParserHelper();
+            try
             {
-                try
-                {
-                    parser.ParseParadoxString(fullPath, reader.ReadToEnd());
-                }
-                catch (Exception e)
-                {
-                    this.Valid = false;
-                    this.ParseError = e.Message;
-                }
+                parser.ParseParadoxString(this.FullPath, data);
+            }
+            catch (Exception e)
+            {
+                this.Valid = false;
+                this.Log().Error(e, "Data file parse error");
             }
         }
     }

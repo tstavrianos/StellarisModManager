@@ -36,7 +36,7 @@ namespace Paradox.Common
         /// </summary>
         public string Path => this._node.GetKeyValue("path") != null ? System.IO.Path.Combine(this._stellarisDataPath, this._node.GetKeyValue("path")) : null;
 
-        public IList<string> Tags => this._node.GetNode("tags")?.Values;
+        public IEnumerable<string> Tags => this._node.GetNode("tags")?.Values;
 
         public IList<string> Dependencies => this._node.GetNode("dependencies")?.Values;
 
@@ -52,24 +52,31 @@ namespace Paradox.Common
 
         public string Key => $"mod/{System.IO.Path.GetFileName(this.ModDefinitionFilePath)}";
 
-        public IEnumerable<ModDataFile> ModifiedFiles { get; }
+        public IList<string> ModifiedFiles { get; }
+
+        public IList<ModDataFile> DataFiles { get; }
+        
+        public bool Valid { get; private set; }
 
         internal ModDefinitionFile(string modDefinitionFilePath, string stellarisDataPath, CwNode node)
         {
             this.ModDefinitionFilePath = modDefinitionFilePath;
             this._stellarisDataPath = stellarisDataPath;
             this._node = node;
-            this.ModifiedFiles = this.LoadFiles(stellarisDataPath);
+            this.ModifiedFiles = new List<string>();
+            this.DataFiles = new List<ModDataFile>(); 
+            this.LoadFiles(stellarisDataPath);
         }
 
-        private IEnumerable<ModDataFile> LoadFiles(string basePath)
+        private void LoadFiles(string basePath)
         {
-            var ret = new List<ModDataFile>();
             var mPath = Path2.Combine(basePath, this.Archive ?? this.Path);
+            this.Valid = false;
 
             if (Path2.GetExtension(mPath) == ".zip")
             {
-                if (!File.Exists(mPath)) return ret;
+                if (!File.Exists(mPath)) return;
+                this.Valid = true;
 
                 using var zipFile = ZipFile.Read(new FileInfo(mPath).FullName);
                 foreach (var item in zipFile.Entries)
@@ -83,6 +90,7 @@ namespace Paradox.Common
                         continue;
                     }
 
+                    this.ModifiedFiles.Add(name);
                     if (!FileExtensions.Contains(System.IO.Path.GetExtension(name), StringComparer.OrdinalIgnoreCase))
                     {
                         continue;
@@ -90,14 +98,17 @@ namespace Paradox.Common
 
                     using (var s = item.OpenReader())
                     {
-                        ret.Add(new ModDataFile(name, s));
+                        using(var sr = new StreamReader(s, leaveOpen: true))
+                            this.DataFiles.Add(new ModDataFile(name, sr.ReadToEnd()));
                     }
                 }
             }
             else
             {
                 mPath += Path2.DirectorySeparatorChar;
-                if (!Directory.Exists(mPath)) return ret;
+                if (!Directory.Exists(mPath)) return;
+                this.Valid = true;
+
                 var paths = Directory.EnumerateFiles(mPath, "*.*", SearchOption.AllDirectories);
                 foreach (var path in paths)
                 {
@@ -105,19 +116,21 @@ namespace Paradox.Common
                         0) continue;
                     var refPath = Uri.UnescapeDataString(new Uri(mPath).MakeRelativeUri(new Uri(path)).OriginalString);
                     var name = refPath.Replace('\\', '/');
+                    this.ModifiedFiles.Add(name);
                     if (!FileExtensions.Contains(System.IO.Path.GetExtension(name), StringComparer.OrdinalIgnoreCase))
                     {
                         continue;
                     }
 
-                    using (var stream = File.OpenRead(path))
+                    using (var s = File.OpenRead(path))
                     {
-                        ret.Add(new ModDataFile(name, stream));
+                        using(var sr = new StreamReader(s, leaveOpen: true))
+                            this.DataFiles.Add(new ModDataFile(name, sr.ReadToEnd()));
                     }
                 }
             }
 
-            return ret;
+            if (this.DataFiles.Any(x => !x.Valid)) this.Valid = false;
         }
     }
 }

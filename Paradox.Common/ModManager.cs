@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
+using Paradox.Common.Extensions;
 using Paradox.Common.Helpers;
 using Splat;
 
@@ -24,7 +25,7 @@ namespace Paradox.Common
         public ModManager()
         {
             this._runValidation = false;
-            this._fileConflicts = new Dictionary<string, string>();
+            this._fileConflicts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             this.Loaded = false;
             this.Version = new SupportedVersion(2, 6, 1);
             this.BasePath = $"{Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}\\Paradox Interactive\\Stellaris";
@@ -331,15 +332,14 @@ namespace Paradox.Common
             foreach (var mod in this.Enabled)
             {
                 mod.OverwrittenByOthers = this._fileConflicts.Any(x =>
-                    mod.ModDefinitionFile.ModifiedFiles.Any(y => y.Valid && y.FullPath == x.Key) &&
+                    mod.ModDefinitionFile.ModifiedFiles.Any(y => y.Equals(x.Key, StringComparison.OrdinalIgnoreCase)) &&
                     x.Value != mod.ModDefinitionFile.RemoteFileId);
 
                 mod.OverwritesOthers = this._fileConflicts.Any(x =>
-                    mod.ModDefinitionFile.ModifiedFiles.Any(y => y.Valid && y.FullPath == x.Key) &&
+                    mod.ModDefinitionFile.ModifiedFiles.Any(y => y.Equals(x.Key, StringComparison.OrdinalIgnoreCase)) &&
                                                                  x.Value == mod.ModDefinitionFile.RemoteFileId);
 
-                mod.AllFilesOverwritten = mod.ModDefinitionFile.ModifiedFiles.All(x => x.Valid &&
-                    this._fileConflicts.TryGetValue(x.FullPath, out var mod2) && mod2 != mod.ModDefinitionFile.RemoteFileId);
+                mod.AllFilesOverwritten = mod.ModDefinitionFile.ModifiedFiles.All(x => this._fileConflicts.TryGetValue(x, out var mod2) && mod2 != mod.ModDefinitionFile.RemoteFileId);
                 if (!mod.AllFilesOverwritten) continue;
                 mod.OverwritesOthers = false;
                 mod.OverwrittenByOthers = false;
@@ -350,9 +350,9 @@ namespace Paradox.Common
         {
             foreach (var file in mod1.ModDefinitionFile.ModifiedFiles)
             {
-                if (mod2.ModDefinitionFile.ModifiedFiles.Any(x => x.Valid && x.FullPath.Equals(file.FullPath, StringComparison.OrdinalIgnoreCase)))
+                if (mod2.ModDefinitionFile.ModifiedFiles.Any(x => x.Equals(file, StringComparison.OrdinalIgnoreCase)))
                 {
-                    this._fileConflicts[file.FullPath] = mod2.ModDefinitionFile.RemoteFileId;
+                    this._fileConflicts[file] = mod2.ModDefinitionFile.RemoteFileId;
                 }
             }
         }
@@ -469,13 +469,13 @@ namespace Paradox.Common
             }
         }
 
-        private static int PriorityForTag(string tag)
+        /*private static int PriorityForTag(string tag)
         {
             if (new[] {"OST", "Music", "Sound", "Graphics"}.Contains(tag, StringComparer.OrdinalIgnoreCase)) return 0;
             if (new[] {"AI", "Utilities", "Fixes"}.Contains(tag, StringComparer.OrdinalIgnoreCase)) return 1;
             if ("Patch".Equals(tag, StringComparison.OrdinalIgnoreCase)) return 2;
             return 3;
-        }
+        }*/
         
         public void ExperimentalSort()
         {

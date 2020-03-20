@@ -44,10 +44,8 @@ namespace Paradox.Common
                     result[paradoxFile] = (this.ParseParadoxFile(paradoxFile));
                 }
                 catch (Exception e) {
-                    if (continueOnFailure) {
-                        this.Log().Error(e, "Error parsing file {file}", paradoxFile);
-                    }
-                    else {
+                    this.Log().Error(e, $"Error parsing file {paradoxFile}");
+                    if (!continueOnFailure) {
                         throw;
                     }
                 }
@@ -61,7 +59,10 @@ namespace Paradox.Common
             // raw parsing
             var parsed = CKParser.parseEventFile(filePath);
 
-            if (!parsed.IsSuccess) throw new Exception(parsed.GetError());
+            if (!parsed.IsSuccess)
+            {
+                throw new Exception(parsed.GetError());
+            }
             // this is an extension method in CWTools.CSharp
             var eventFile = parsed.GetResult();
 
@@ -90,8 +91,8 @@ namespace Paradox.Common
             var marshaled = this.ToMyNode(processed);
 
             return marshaled;
-
         }
+        
         private CwNode ToMyNode(Node n)
         {
             var leaves = n.AllChildren.Where(x => x.IsLeafC).Select(x => ToMyKeyValue(x.leaf)).ToList();
@@ -108,8 +109,7 @@ namespace Paradox.Common
             var values = n.AllChildren.Where(x => x.IsLeafValueC).Select(x => x.lefavalue.Key).ToList();
             return new CwNode(n.Key) { Nodes = nodes, Values = values, RawKeyValues = leaves, ScriptedVariablesAccessor = sa};
         }
-
-
+        
         private static CwKeyValue ToMyKeyValue(Leaf l)
         {
             return new CwKeyValue { Key = l.Key, Value = l.Value.ToRawString() };

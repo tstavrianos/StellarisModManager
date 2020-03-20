@@ -5,6 +5,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using Paradox.Common.Extensions;
 
 namespace Paradox.Common.Helpers
 {

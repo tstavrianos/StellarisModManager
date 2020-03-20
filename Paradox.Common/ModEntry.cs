@@ -9,8 +9,38 @@ using System.Collections.ObjectModel;
 namespace Paradox.Common
 {
 
-    public sealed class ModEntry : ReactiveObject
+    public sealed class ModEntry : ReactiveObject, IEquatable<ModEntry>
     {
+        public bool Equals(ModEntry other)
+        {
+            return this == other;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return ReferenceEquals(this, obj) || obj is ModEntry other && this == other;
+        }
+
+        public override int GetHashCode()
+        {
+            var hashCode = new HashCode();
+            hashCode.Add(this._modDefinitionFile);
+            hashCode.Add(this._modsRegistryEntry);
+            hashCode.Add(this._isChecked);
+            hashCode.Add(this._originalSpot);
+            hashCode.Add(this._isPointerOver);
+            hashCode.Add(this._modManager);
+            hashCode.Add(this._supportedVersion);
+            hashCode.Add(this._outdated);
+            hashCode.Add(this._modConflicts);
+            hashCode.Add(this._idDependencies);
+            hashCode.Add(this._nameDependencies);
+            hashCode.Add(this._overwritesOthers);
+            hashCode.Add(this._overwrittenByOthers);
+            hashCode.Add(this._allFilesOverwritten);
+            return hashCode.ToHashCode();
+        }
+
         private ModDefinitionFile _modDefinitionFile;
         private ModsRegistryEntry _modsRegistryEntry;
         private bool _isChecked;

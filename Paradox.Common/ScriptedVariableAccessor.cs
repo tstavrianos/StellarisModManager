@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Paradox.Common.Extensions;
 using Paradox.Common.Interfaces;
 using Splat;
 

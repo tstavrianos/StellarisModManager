@@ -5,6 +5,7 @@ using System.Linq;
 using Newtonsoft.Json;
 using Splat;
 using Ionic.Zip;
+using Paradox.Common.Extensions;
 
 namespace Paradox.Common
 {
@@ -41,7 +42,7 @@ namespace Paradox.Common
                 ArchiveFilePath = x.Archive,
                 ModDirectoryPath = x.Path
             }).ToList();
-            list.Sort(Extensions.Create<ModInfo>(x => x.Name));
+            list.Sort(ComparerExtensions.Create<ModInfo>(x => x.Name));
             var serializer = new JsonSerializer { Formatting = Formatting.Indented };
             using JsonWriter writer = new JsonTextWriter(new StreamWriter(modInfoFilePath));
             serializer.Serialize(writer, list);
