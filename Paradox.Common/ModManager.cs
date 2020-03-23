@@ -43,7 +43,7 @@ namespace Paradox.Common
                 if (string.IsNullOrWhiteSpace(entry.GameRegistryId)) continue;
                 var mod = mods.FirstOrDefault(x => x.Key.Equals(entry.GameRegistryId, StringComparison.OrdinalIgnoreCase));
                 if (mod == null) continue;
-                var modEntry = new ModEntry(this) { ModDefinitionFile = mod, ModsRegistryEntry = entry, OriginalSpot = i++, ModConflicts = new ObservableCollection<LoadOrderConflict>() };
+                var modEntry = new ModEntry(this) { ModDefinitionFile = mod, ModsRegistryEntry = entry, OriginalSpot = i++, LoadOrderConflicts = new ObservableCollection<LoadOrderConflict>() };
                 this.Mods.Add(modEntry);
             }
 
@@ -249,7 +249,7 @@ namespace Paradox.Common
             if (!this._runValidation) return;
             foreach (var entry in this.Enabled)
             {
-                entry.ModConflicts.Clear();
+                entry.LoadOrderConflicts.Clear();
             }
 
             for (var i = 0; i < this.Enabled.Count; i++)
@@ -266,7 +266,7 @@ namespace Paradox.Common
                         if (foundIdx > i)
                         {
                             isDown = true;
-                            found.ModConflicts.Add(new LoadOrderConflict { IsUp = true, DependsOnId = modEntry.ModDefinitionFile.RemoteFileId, DependsOnName = modEntry.DisplayName });
+                            found.LoadOrderConflicts.Add(new LoadOrderConflict { IsUp = true, DependsOnId = modEntry.ModDefinitionFile.RemoteFileId, DependsOnName = modEntry.DisplayName });
                         }
                     }
 
@@ -279,7 +279,7 @@ namespace Paradox.Common
                         DependsOnId = dependsOn,
                         DependsOnName = found?.DisplayName
                     };
-                    modEntry.ModConflicts.Add(conflict);
+                    modEntry.LoadOrderConflicts.Add(conflict);
                 }
 
                 foreach (var dependsOn in modEntry.NameDependencies)
@@ -293,8 +293,8 @@ namespace Paradox.Common
                         if (foundIdx > i)
                         {
                             isDown = true;
-                            if (found.ModConflicts.All(x => x.DependsOnName != modEntry.DisplayName && x.DependsOnId != modEntry.ModDefinitionFile.RemoteFileId))
-                                found.ModConflicts.Add(new LoadOrderConflict { IsUp = true, DependsOnId = modEntry.ModDefinitionFile.RemoteFileId, DependsOnName = modEntry.DisplayName });
+                            if (found.LoadOrderConflicts.All(x => x.DependsOnName != modEntry.DisplayName && x.DependsOnId != modEntry.ModDefinitionFile.RemoteFileId))
+                                found.LoadOrderConflicts.Add(new LoadOrderConflict { IsUp = true, DependsOnId = modEntry.ModDefinitionFile.RemoteFileId, DependsOnName = modEntry.DisplayName });
                         }
                     }
 
@@ -307,8 +307,8 @@ namespace Paradox.Common
                         DependsOnId = found?.ModDefinitionFile.RemoteFileId,
                         DependsOnName = dependsOn
                     };
-                    if (!modEntry.ModConflicts.Any(x => x.DependsOnName == conflict.DependsOnName || (!string.IsNullOrEmpty(conflict.DependsOnId) && x.DependsOnId != conflict.DependsOnId)))
-                        modEntry.ModConflicts.Add(conflict);
+                    if (!modEntry.LoadOrderConflicts.Any(x => x.DependsOnName == conflict.DependsOnName || (!string.IsNullOrEmpty(conflict.DependsOnId) && x.DependsOnId != conflict.DependsOnId)))
+                        modEntry.LoadOrderConflicts.Add(conflict);
                 }
             }
 

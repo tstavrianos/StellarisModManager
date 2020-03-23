@@ -93,7 +93,7 @@
                     <DataTemplate DataType="common:ModEntry">
                         <Grid ColumnDefinitions="*,auto,auto,16" RowDefinitions="16" Name="OperationGrid" Margin="0" Background="Transparent">
                             <TextBlock Focusable="False" Grid.Column="0" Text="{Binding DisplayName}" Margin="5,0" ToolTip.Tip="{Binding ModDefinitionFile.RemoteFileId}"/>
-                            <ItemsControl Items="{Binding ModConflicts}" Grid.Column="1">
+                            <ItemsControl Items="{Binding LoadOrderConflicts}" Grid.Column="1">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <StackPanel Orientation="Horizontal"/>

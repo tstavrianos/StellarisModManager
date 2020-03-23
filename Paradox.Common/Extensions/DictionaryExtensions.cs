@@ -23,5 +23,15 @@ namespace Paradox.Common.Extensions
                 dictionary[key] = value;
             }
         }
+        
+        internal static TValue GetOrCreate<TKey, TValue>(this Dictionary<TKey, TValue> map, TKey key, Func<TKey, TValue> ctor)
+        {
+            if (!map.ContainsKey(key))
+            {
+                map[key] = ctor(key);
+            }
+            return map[key];
+        }
+
     }
 }

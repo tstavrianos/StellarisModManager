@@ -32,7 +32,7 @@ namespace Paradox.Common
             hashCode.Add(this._modManager);
             hashCode.Add(this._supportedVersion);
             hashCode.Add(this._outdated);
-            hashCode.Add(this._modConflicts);
+            hashCode.Add(this._loadOrderConflicts);
             hashCode.Add(this._idDependencies);
             hashCode.Add(this._nameDependencies);
             hashCode.Add(this._overwritesOthers);
@@ -49,7 +49,7 @@ namespace Paradox.Common
         private readonly ModManager _modManager;
         private SupportedVersion _supportedVersion;
         private bool _outdated;
-        private ObservableCollection<LoadOrderConflict> _modConflicts;
+        private ObservableCollection<LoadOrderConflict> _loadOrderConflicts;
         private ObservableHashSet<string> _idDependencies;
         private ObservableHashSet<string> _nameDependencies;
         private bool _overwritesOthers;
@@ -73,10 +73,10 @@ namespace Paradox.Common
             set => this.RaiseAndSetIfChanged(ref this._modsRegistryEntry, value);
         }
 
-        public ObservableCollection<LoadOrderConflict> ModConflicts
+        public ObservableCollection<LoadOrderConflict> LoadOrderConflicts
         {
-            get => this._modConflicts;
-            set => this.RaiseAndSetIfChanged(ref this._modConflicts, value);
+            get => this._loadOrderConflicts;
+            set => this.RaiseAndSetIfChanged(ref this._loadOrderConflicts, value);
         }
 
         public string DisplayName => this.ModDefinitionFile?.Name;
